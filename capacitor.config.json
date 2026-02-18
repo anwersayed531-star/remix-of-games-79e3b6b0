@@ -1,0 +1,9 @@
+{
+  "appId": "com.sayed.gamehub",
+  "appName": "Game Hub",
+  "webDir": "dist",
+  "android": {
+    "minWebViewVersion": 55,
+    "backgroundColor": "#1a0f0a"
+  }
+}
