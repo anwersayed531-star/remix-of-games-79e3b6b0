@@ -32,9 +32,11 @@ function decompressSDP(code: string): RTCSessionDescriptionInit {
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
-    // Local network usually works without STUN, but add as fallback
+    // STUN as fallback only - local network works without it
     { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function useP2PConnection(): UseP2PConnectionReturn {
@@ -85,9 +87,18 @@ export function useP2PConnection(): UseP2PConnectionReturn {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-        setStatus("failed");
-        setError("انقطع الاتصال");
+      if (pc.connectionState === "failed") {
+        // Auto-retry ICE restart instead of immediately failing
+        pc.restartIce();
+      }
+      if (pc.connectionState === "disconnected") {
+        // Give it a chance to reconnect before failing
+        setTimeout(() => {
+          if (pc.connectionState === "disconnected") {
+            setStatus("failed");
+            setError("انقطع الاتصال - حاول مرة أخرى");
+          }
+        }, 5000);
       }
     };
 
@@ -108,8 +119,8 @@ export function useP2PConnection(): UseP2PConnectionReturn {
         }
       };
       pc.addEventListener("icegatheringstatechange", check);
-      // Timeout after 5 seconds
-      setTimeout(resolve, 5000);
+      // Timeout after 10 seconds for local network
+      setTimeout(resolve, 10000);
     });
   }, []);
 
