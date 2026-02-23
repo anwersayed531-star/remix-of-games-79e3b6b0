@@ -32,9 +32,11 @@ function decompressSDP(code: string): RTCSessionDescriptionInit {
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
-    // Local network usually works without STUN, but add as fallback
+    // STUN as fallback only - local network works without it
     { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function useP2PConnection(): UseP2PConnectionReturn {
