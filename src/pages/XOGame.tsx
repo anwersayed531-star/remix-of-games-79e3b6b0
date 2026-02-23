@@ -213,13 +213,17 @@ const XOGame = () => {
         status={mp.status}
         role={mp.role}
         localCode={mp.localCode}
+        answerCode={mp.answerCode}
         error={mp.error}
         onCreateRoom={mp.createRoom}
         onJoinRoom={mp.joinRoom}
-        onCompleteConnection={mp.completeConnection}
+        onHandleAnswer={mp.handleAnswer}
+        onGenerateNext={mp.generateOfferForNext}
         onDisconnect={mp.disconnect}
         onBack={() => setMode("local")}
         gameName="XO"
+        peerCount={mp.peerCount}
+        peers={mp.peers}
       />
     );
   }

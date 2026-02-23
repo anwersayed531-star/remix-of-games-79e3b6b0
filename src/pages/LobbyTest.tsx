@@ -13,6 +13,9 @@ const LobbyTest = () => {
           <p className="text-accent text-2xl mb-2">✅ متصل!</p>
           <p className="text-foreground text-sm mb-1">الدور: {mp.role === "host" ? "المضيف" : "الضيف"}</p>
           <p className="text-muted-foreground text-xs mb-4">الاتصال يعمل بنجاح عبر WebRTC</p>
+          {mp.peerCount > 0 && (
+            <p className="text-accent text-xs mb-4">{mp.peerCount} لاعب متصل</p>
+          )}
           <button
             onClick={mp.disconnect}
             className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-bold"
@@ -29,13 +32,17 @@ const LobbyTest = () => {
       status={mp.status}
       role={mp.role}
       localCode={mp.localCode}
+      answerCode={mp.answerCode}
       error={mp.error}
       onCreateRoom={mp.createRoom}
       onJoinRoom={mp.joinRoom}
-      onCompleteConnection={mp.completeConnection}
+      onHandleAnswer={mp.handleAnswer}
+      onGenerateNext={mp.generateOfferForNext}
       onDisconnect={mp.disconnect}
       onBack={() => navigate("/")}
       gameName="اختبار"
+      peerCount={mp.peerCount}
+      peers={mp.peers}
     />
   );
 };
