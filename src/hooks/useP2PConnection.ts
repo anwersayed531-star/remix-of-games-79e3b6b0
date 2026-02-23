@@ -110,8 +110,8 @@ export function useP2PConnection(): UseP2PConnectionReturn {
         }
       };
       pc.addEventListener("icegatheringstatechange", check);
-      // Timeout after 5 seconds
-      setTimeout(resolve, 5000);
+      // Timeout after 10 seconds for local network
+      setTimeout(resolve, 10000);
     });
   }, []);
 
