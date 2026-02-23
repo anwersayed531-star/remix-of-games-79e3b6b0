@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Wifi, ArrowLeft, Loader2, WifiOff, Smartphone, QrCode, ScanLine } from "lucide-react";
+import { Wifi, ArrowLeft, Loader2, WifiOff, Smartphone, QrCode, ScanLine, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConnectionStatus, Role } from "@/hooks/useP2PConnection";
+import type { ConnectionStatus, Role } from "@/hooks/useMultiplayerSync";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import QRCodeScanner from "@/components/QRCodeScanner";
 
@@ -9,37 +9,47 @@ interface MultiplayerLobbyProps {
   status: ConnectionStatus;
   role: Role;
   localCode: string;
+  answerCode?: string;
   error: string | null;
   onCreateRoom: () => void;
   onJoinRoom: (code: string) => void;
-  onCompleteConnection: (code: string) => void;
+  onHandleAnswer?: (code: string) => void;
+  onGenerateNext?: () => void;
   onDisconnect: () => void;
   onBack: () => void;
   gameName: string;
+  peerCount?: number;
+  peers?: { id: string; name: string; connected: boolean }[];
+  // Legacy support
+  onCompleteConnection?: (code: string) => void;
 }
 
 const MultiplayerLobby = ({
   status,
   role,
   localCode,
+  answerCode = "",
   error,
   onCreateRoom,
   onJoinRoom,
-  onCompleteConnection,
+  onHandleAnswer,
+  onGenerateNext,
   onDisconnect,
   onBack,
   gameName,
+  peerCount = 0,
+  peers = [],
+  onCompleteConnection,
 }: MultiplayerLobbyProps) => {
   const [showScanner, setShowScanner] = useState(false);
+  const [showAddMore, setShowAddMore] = useState(false);
 
   const handleQRScanned = (data: string) => {
     setShowScanner(false);
     if (role === null) {
-      // Guest scanned host's QR - join room
       onJoinRoom(data);
     } else if (role === "host") {
-      // Host scanned guest's answer
-      onCompleteConnection(data);
+      (onHandleAnswer || onCompleteConnection)?.(data);
     }
   };
 
@@ -54,6 +64,72 @@ const MultiplayerLobby = ({
         <p className="text-muted-foreground text-sm text-center">
           أنت {role === "host" ? "المضيف" : "الضيف"} — اللعبة جاهزة
         </p>
+        
+        {peerCount > 0 && (
+          <div className="flex items-center gap-2 text-accent text-xs">
+            <Users className="w-4 h-4" />
+            <span>{peerCount} لاعب متصل</span>
+          </div>
+        )}
+
+        {peers.length > 0 && (
+          <div className="w-full max-w-xs space-y-1">
+            {peers.filter(p => p.connected).map(p => (
+              <div key={p.id} className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-1 text-xs">
+                <span className="w-2 h-2 rounded-full bg-accent" />
+                <span className="text-foreground">{p.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add more players (host only) */}
+        {role === "host" && onGenerateNext && (
+          <>
+            {!showAddMore ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await onGenerateNext();
+                  setShowAddMore(true);
+                }}
+                className="border-accent text-accent hover:bg-accent/10"
+              >
+                <Plus className="w-4 h-4 ml-1" />
+                إضافة لاعب
+              </Button>
+            ) : (
+              <div className="w-full max-w-sm space-y-3">
+                <div className="bg-card/60 border border-gold/30 rounded-xl p-3">
+                  <p className="text-gold text-xs font-bold mb-2 text-center">
+                    اطلب من اللاعب الجديد مسح الرمز:
+                  </p>
+                  {localCode && <QRCodeDisplay value={localCode} size={160} />}
+                </div>
+                <div className="bg-card/60 border border-border rounded-xl p-3">
+                  <p className="text-foreground text-xs font-bold mb-2 text-center">ثم امسح رمز الرد:</p>
+                  <QRCodeScanner
+                    onScan={(data) => {
+                      handleQRScanned(data);
+                      setShowAddMore(false);
+                    }}
+                    scanning={showAddMore}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddMore(false)}
+                  className="w-full text-muted-foreground"
+                >
+                  إلغاء
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
         <Button
           variant="outline"
           size="sm"
@@ -99,7 +175,7 @@ const MultiplayerLobby = ({
         {status === "idle" && !showScanner && (
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm text-center">
-              تأكد أن الجهازين على نفس شبكة الواي فاي أو نقطة اتصال
+              تأكد أن الأجهزة على نفس شبكة الواي فاي أو نقطة اتصال
             </p>
 
             <Button
@@ -107,7 +183,7 @@ const MultiplayerLobby = ({
               className="w-full h-14 text-lg gold-gradient text-background font-bold rounded-xl"
             >
               <QrCode className="w-5 h-5 ml-2" />
-              إنشاء غرفة
+              إنشاء غرفة (حتى 40 لاعب)
             </Button>
 
             <div className="relative flex items-center justify-center">
@@ -145,10 +221,7 @@ const MultiplayerLobby = ({
               <p className="text-gold text-sm font-bold">مسح رمز QR</p>
               <div className="w-16" />
             </div>
-            <QRCodeScanner
-              onScan={handleQRScanned}
-              scanning={showScanner}
-            />
+            <QRCodeScanner onScan={handleQRScanned} scanning={showScanner} />
           </div>
         )}
 
@@ -160,19 +233,16 @@ const MultiplayerLobby = ({
           </div>
         )}
 
-        {/* Waiting: show QR Code for host, show scanner for guest */}
-        {status === "waiting" && localCode && (
+        {/* Waiting */}
+        {status === "waiting" && (
           <div className="space-y-4">
-            {role === "host" && (
+            {role === "host" && localCode && (
               <>
                 <div className="bg-card/60 border border-gold/30 rounded-xl p-4">
                   <p className="text-gold text-sm font-bold mb-3 text-center">
                     اطلب من اللاعب مسح هذا الرمز:
                   </p>
-                  <QRCodeDisplay
-                    value={localCode}
-                    size={200}
-                  />
+                  <QRCodeDisplay value={localCode} size={200} />
                 </div>
 
                 <div className="relative flex items-center justify-center">
@@ -196,16 +266,13 @@ const MultiplayerLobby = ({
               </>
             )}
 
-            {role === "guest" && (
+            {role === "guest" && answerCode && (
               <div className="space-y-4">
                 <div className="bg-card/60 border border-gold/30 rounded-xl p-4">
                   <p className="text-gold text-sm font-bold mb-3 text-center">
                     اعرض هذا الرمز للمضيف ليمسحه:
                   </p>
-                  <QRCodeDisplay
-                    value={localCode}
-                    size={200}
-                  />
+                  <QRCodeDisplay value={answerCode} size={200} />
                 </div>
                 <div className="flex items-center gap-2 justify-center text-muted-foreground py-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -231,6 +298,7 @@ const MultiplayerLobby = ({
               onClick={() => {
                 onDisconnect();
                 setShowScanner(false);
+                setShowAddMore(false);
               }}
               variant="outline"
               className="border-gold text-gold hover:bg-gold/10"
