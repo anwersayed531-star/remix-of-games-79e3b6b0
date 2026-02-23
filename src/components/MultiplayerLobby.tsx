@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Wifi, Copy, Check, ArrowLeft, Loader2, WifiOff, Smartphone } from "lucide-react";
+import { Wifi, ArrowLeft, Loader2, WifiOff, Smartphone, QrCode, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConnectionStatus, Role } from "@/hooks/useP2PConnection";
+import QRCodeDisplay from "@/components/QRCodeDisplay";
+import QRCodeScanner from "@/components/QRCodeScanner";
 
 interface MultiplayerLobbyProps {
   status: ConnectionStatus;
@@ -28,35 +30,17 @@ const MultiplayerLobby = ({
   onBack,
   gameName,
 }: MultiplayerLobbyProps) => {
-  const [remoteCode, setRemoteCode] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(localCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback: select text for manual copy
-      const textarea = document.createElement("textarea");
-      textarea.value = localCode;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleSubmitCode = () => {
-    if (!remoteCode.trim()) return;
+  const handleQRScanned = (data: string) => {
+    setShowScanner(false);
     if (role === null) {
-      onJoinRoom(remoteCode);
+      // Guest scanned host's QR - join room
+      onJoinRoom(data);
     } else if (role === "host") {
-      onCompleteConnection(remoteCode);
+      // Host scanned guest's answer
+      onCompleteConnection(data);
     }
-    setRemoteCode("");
   };
 
   // Connected state
@@ -112,17 +96,17 @@ const MultiplayerLobby = ({
         )}
 
         {/* Idle: choose action */}
-        {status === "idle" && (
+        {status === "idle" && !showScanner && (
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm text-center">
-              تأكد أن الجهازين على نفس شبكة الواي فاي
+              تأكد أن الجهازين على نفس شبكة الواي فاي أو نقطة اتصال
             </p>
 
             <Button
               onClick={onCreateRoom}
               className="w-full h-14 text-lg gold-gradient text-background font-bold rounded-xl"
             >
-              <Wifi className="w-5 h-5 ml-2" />
+              <QrCode className="w-5 h-5 ml-2" />
               إنشاء غرفة
             </Button>
 
@@ -135,22 +119,36 @@ const MultiplayerLobby = ({
               </span>
             </div>
 
-            <div className="space-y-2">
-              <textarea
-                value={remoteCode}
-                onChange={(e) => setRemoteCode(e.target.value)}
-                placeholder="الصق رمز الغرفة هنا..."
-                className="w-full h-24 bg-card/60 border border-border rounded-xl p-3 text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                dir="ltr"
-              />
+            <Button
+              onClick={() => setShowScanner(true)}
+              className="w-full h-14 text-lg bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-xl"
+            >
+              <ScanLine className="w-5 h-5 ml-2" />
+              مسح رمز QR للانضمام
+            </Button>
+          </div>
+        )}
+
+        {/* Scanner mode */}
+        {status === "idle" && showScanner && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <Button
-                onClick={handleSubmitCode}
-                disabled={!remoteCode.trim()}
-                className="w-full h-12 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-xl"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowScanner(false)}
+                className="text-muted-foreground"
               >
-                انضمام للغرفة
+                <ArrowLeft className="w-4 h-4 ml-1" />
+                رجوع
               </Button>
+              <p className="text-gold text-sm font-bold">مسح رمز QR</p>
+              <div className="w-16" />
             </div>
+            <QRCodeScanner
+              onScan={handleQRScanned}
+              scanning={showScanner}
+            />
           </div>
         )}
 
@@ -162,62 +160,57 @@ const MultiplayerLobby = ({
           </div>
         )}
 
-        {/* Waiting: show local code */}
+        {/* Waiting: show QR Code for host, show scanner for guest */}
         {status === "waiting" && localCode && (
           <div className="space-y-4">
-            <div className="bg-card/60 border border-gold/30 rounded-xl p-4">
-              <p className="text-gold text-sm font-bold mb-2 text-center">
-                {role === "host"
-                  ? "١. أرسل هذا الرمز للاعب الثاني:"
-                  : "١. أرسل هذا الرمز للاعب الأول:"}
-              </p>
-              <div className="relative">
-                <textarea
-                  readOnly
-                  value={localCode}
-                  className="w-full h-20 bg-background/60 border border-border rounded-lg p-2 text-foreground text-xs font-mono resize-none"
-                  dir="ltr"
-                  onFocus={(e) => e.target.select()}
-                />
-                <button
-                  onClick={handleCopy}
-                  className="absolute top-2 left-2 p-1.5 rounded-md bg-secondary/80 hover:bg-secondary border border-gold/30"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-accent" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-gold" />
-                  )}
-                </button>
-              </div>
-            </div>
-
             {role === "host" && (
-              <div className="bg-card/60 border border-border rounded-xl p-4 space-y-2">
-                <p className="text-foreground text-sm font-bold text-center">
-                  ٢. الصق رمز اللاعب الثاني هنا:
-                </p>
-                <textarea
-                  value={remoteCode}
-                  onChange={(e) => setRemoteCode(e.target.value)}
-                  placeholder="الصق رمز الرد هنا..."
-                  className="w-full h-20 bg-background/60 border border-border rounded-lg p-2 text-foreground text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  dir="ltr"
-                />
-                <Button
-                  onClick={handleSubmitCode}
-                  disabled={!remoteCode.trim()}
-                  className="w-full h-12 gold-gradient text-background font-bold rounded-xl"
-                >
-                  اتصال
-                </Button>
-              </div>
+              <>
+                <div className="bg-card/60 border border-gold/30 rounded-xl p-4">
+                  <p className="text-gold text-sm font-bold mb-3 text-center">
+                    اطلب من اللاعب مسح هذا الرمز:
+                  </p>
+                  <QRCodeDisplay
+                    value={localCode}
+                    size={200}
+                  />
+                </div>
+
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <span className="relative bg-background px-3 text-muted-foreground text-xs">
+                    ثم امسح رمز الرد
+                  </span>
+                </div>
+
+                <div className="bg-card/60 border border-border rounded-xl p-4">
+                  <p className="text-foreground text-sm font-bold mb-2 text-center">
+                    امسح رمز QR من شاشة اللاعب:
+                  </p>
+                  <QRCodeScanner
+                    onScan={handleQRScanned}
+                    scanning={role === "host" && status === "waiting"}
+                  />
+                </div>
+              </>
             )}
 
             {role === "guest" && (
-              <div className="flex items-center gap-2 justify-center text-muted-foreground py-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">في انتظار المضيف...</span>
+              <div className="space-y-4">
+                <div className="bg-card/60 border border-gold/30 rounded-xl p-4">
+                  <p className="text-gold text-sm font-bold mb-3 text-center">
+                    اعرض هذا الرمز للمضيف ليمسحه:
+                  </p>
+                  <QRCodeDisplay
+                    value={localCode}
+                    size={200}
+                  />
+                </div>
+                <div className="flex items-center gap-2 justify-center text-muted-foreground py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">في انتظار المضيف ليمسح الرمز...</span>
+                </div>
               </div>
             )}
           </div>
@@ -237,6 +230,7 @@ const MultiplayerLobby = ({
             <Button
               onClick={() => {
                 onDisconnect();
+                setShowScanner(false);
               }}
               variant="outline"
               className="border-gold text-gold hover:bg-gold/10"
