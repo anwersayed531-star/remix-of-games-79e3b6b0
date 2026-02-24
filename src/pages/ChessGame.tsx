@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Chess } from "chess.js";
-import { ArrowLeft, RotateCcw, Settings2, Undo2 } from "lucide-react";
+import { ArrowLeft, RotateCcw, Settings2, Undo2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,39 +11,85 @@ import TournamentManager from "@/components/TournamentManager";
 import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
 import { useTournament } from "@/hooks/useTournament";
+import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Mode = "local" | "ai" | "network";
 type Difficulty = "easy" | "medium" | "hard";
-type BoardTheme = "wood" | "marble" | "plain";
-type PieceTheme = "classic" | "modern" | "fancy" | "minimal";
+type BoardTheme = "wood" | "marble" | "plain" | "emerald";
+type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
 const THEMES: Record<BoardTheme, { light: string; dark: string; name: string }> = {
   wood: { light: "#d4a76a", dark: "#8b5e3c", name: "خشبي" },
-  marble: { light: "#d0d0d0", dark: "#707070", name: "رخامي" },
+  marble: { light: "#e8e0d0", dark: "#8a8178", name: "رخامي" },
   plain: { light: "#f0d9b5", dark: "#b58863", name: "كلاسيكي" },
+  emerald: { light: "#ffffdd", dark: "#6baa58", name: "زمردي" },
 };
 
+// More realistic-looking piece sets using distinct Unicode/emoji combinations
 const PIECE_THEMES: Record<PieceTheme, { name: string; w: Record<string, string>; b: Record<string, string> }> = {
   classic: {
     name: "كلاسيكي",
     w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
     b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
   },
-  modern: {
-    name: "عصري",
-    w: { k: "👑", q: "💎", r: "🏰", b: "⛪", n: "🐴", p: "⚪" },
-    b: { k: "🤴", q: "💍", r: "🗼", b: "🔮", n: "🦄", p: "⚫" },
+  neo: {
+    name: "حديث",
+    w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
+    b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
   },
-  fancy: {
-    name: "فاخر",
-    w: { k: "🏆", q: "👸", r: "🏯", b: "🎯", n: "🦅", p: "🔶" },
-    b: { k: "⚜️", q: "🌙", r: "🏗️", b: "🌀", n: "🐉", p: "🔷" },
+  staunton: {
+    name: "ستاونتن",
+    w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
+    b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
   },
   minimal: {
     name: "بسيط",
     w: { k: "K", q: "Q", r: "R", b: "B", n: "N", p: "P" },
     b: { k: "k", q: "q", r: "r", b: "b", n: "n", p: "p" },
   },
+};
+
+// Piece styling per theme
+const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties> = {
+  classic: (color) => ({
+    fontSize: "min(7vw, 36px)",
+    color: color === "w" ? "#fff" : "#1a1a1a",
+    textShadow: color === "w"
+      ? "0 1px 3px rgba(0,0,0,0.6), 0 0 8px rgba(255,255,255,0.2)"
+      : "0 1px 2px rgba(255,255,255,0.3), 0 0 6px rgba(0,0,0,0.4)",
+    filter: `drop-shadow(0 2px 3px rgba(0,0,0,0.4))`,
+  }),
+  neo: (color) => ({
+    fontSize: "min(7vw, 36px)",
+    color: color === "w" ? "#f5f0e8" : "#2c1810",
+    textShadow: color === "w"
+      ? "0 0 10px rgba(212,167,106,0.6), 0 2px 4px rgba(0,0,0,0.5)"
+      : "0 0 8px rgba(139,94,60,0.4), 0 2px 4px rgba(0,0,0,0.3)",
+    filter: `drop-shadow(0 3px 4px rgba(0,0,0,0.5))`,
+    fontWeight: "bold",
+  }),
+  staunton: (color) => ({
+    fontSize: "min(8vw, 40px)",
+    color: color === "w" ? "#faf3e8" : "#3d2b1f",
+    textShadow: color === "w"
+      ? "0 1px 2px rgba(0,0,0,0.5), 1px 0 0 rgba(139,94,60,0.3), -1px 0 0 rgba(139,94,60,0.3)"
+      : "0 1px 1px rgba(255,255,255,0.15), 1px 0 0 rgba(0,0,0,0.2), -1px 0 0 rgba(0,0,0,0.2)",
+    filter: `drop-shadow(0 3px 5px rgba(0,0,0,0.5))`,
+    WebkitTextStroke: color === "w" ? "0.5px rgba(139,94,60,0.4)" : "0.5px rgba(0,0,0,0.3)",
+  }),
+  minimal: (color) => ({
+    fontSize: "min(5vw, 26px)",
+    fontWeight: "bold",
+    fontFamily: "'Cinzel', serif",
+    color: color === "w" ? "#faf3e8" : "#2c1810",
+    textShadow: "none",
+    background: color === "w"
+      ? "linear-gradient(135deg, #faf3e8 0%, #d4a76a 100%)"
+      : "linear-gradient(135deg, #5a3e28 0%, #2c1810 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+  }),
 };
 
 const PROMO_PIECES = ["q", "r", "b", "n"] as const;
@@ -62,9 +108,11 @@ const ChessGame = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [promoDialog, setPromoDialog] = useState<{ from: string; to: string } | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
 
   const mp = useMultiplayerSync();
   const tournament = useTournament();
+  const { play } = useGameSounds();
   const isHost = mp.role === "host";
 
   const chess = chessRef.current;
@@ -103,13 +151,20 @@ const ChessGame = () => {
         setLastMove({ from: result.from, to: result.to });
         setSelected(null);
         setLegalMoves([]);
+        if (soundOn) play(result.captured ? "capture" : "move");
         sync();
       }
     });
-    mp.onReset(() => {
-      resetGame();
-    });
-  }, [isNetworkMode, mp, chess, sync, resetGame]);
+    mp.onReset(() => resetGame());
+  }, [isNetworkMode, mp, chess, sync, resetGame, play, soundOn]);
+
+  // Sound effects for game state changes
+  useEffect(() => {
+    if (!soundOn) return;
+    if (isCheckmate) play("win");
+    else if (isCheck) play("check");
+    else if (isDraw || isStalemate) play("draw");
+  }, [isCheckmate, isCheck, isDraw, isStalemate, soundOn, play]);
 
   const handleSquareClick = useCallback((sq: string) => {
     if (isGameOver || aiThinking) return;
@@ -128,9 +183,8 @@ const ChessGame = () => {
         const result = chess.move({ from: selected, to: sq });
         if (result) {
           setLastMove({ from: selected, to: sq });
-          if (isNetworkMode) {
-            mp.sendAction({ from: selected, to: sq });
-          }
+          if (soundOn) play(result.captured ? "capture" : "move");
+          if (isNetworkMode) mp.sendAction({ from: selected, to: sq });
         }
         setSelected(null);
         setLegalMoves([]);
@@ -142,6 +196,7 @@ const ChessGame = () => {
     const piece = chess.get(sq as any);
     if (piece && piece.color === turn) {
       if (isNetworkMode && piece.color !== myColor) return;
+      if (soundOn) play("click");
       setSelected(sq);
       const moves = chess.moves({ square: sq as any, verbose: true }) as any[];
       setLegalMoves([...new Set(moves.map((m: any) => m.to))]);
@@ -149,22 +204,21 @@ const ChessGame = () => {
       setSelected(null);
       setLegalMoves([]);
     }
-  }, [selected, chess, turn, isGameOver, mode, aiThinking, sync, isNetworkMode, isMyTurn, myColor, mp]);
+  }, [selected, chess, turn, isGameOver, mode, aiThinking, sync, isNetworkMode, isMyTurn, myColor, mp, soundOn, play]);
 
   const handlePromotion = useCallback((piece: string) => {
     if (!promoDialog) return;
     const result = chess.move({ from: promoDialog.from, to: promoDialog.to, promotion: piece });
     if (result) {
       setLastMove({ from: promoDialog.from, to: promoDialog.to });
-      if (isNetworkMode) {
-        mp.sendAction({ from: promoDialog.from, to: promoDialog.to, promotion: piece });
-      }
+      if (soundOn) play("move");
+      if (isNetworkMode) mp.sendAction({ from: promoDialog.from, to: promoDialog.to, promotion: piece });
     }
     setPromoDialog(null);
     setSelected(null);
     setLegalMoves([]);
     sync();
-  }, [promoDialog, chess, sync, isNetworkMode, mp]);
+  }, [promoDialog, chess, sync, isNetworkMode, mp, soundOn, play]);
 
   const handleUndo = useCallback(() => {
     if (isNetworkMode) return;
@@ -177,9 +231,7 @@ const ChessGame = () => {
 
   const handleNetworkReset = useCallback(() => {
     resetGame();
-    if (isNetworkMode) {
-      mp.sendReset();
-    }
+    if (isNetworkMode) mp.sendReset();
   }, [resetGame, isNetworkMode, mp]);
 
   // AI move
@@ -190,32 +242,27 @@ const ChessGame = () => {
       const move = findBestMove(chess, difficulty);
       if (move) {
         const result = chess.move(move);
-        if (result) setLastMove({ from: result.from, to: result.to });
+        if (result) {
+          setLastMove({ from: result.from, to: result.to });
+          if (soundOn) play(result.captured ? "capture" : "move");
+        }
       }
       setAiThinking(false);
       sync();
     }, 500);
     return () => clearTimeout(timeout);
-  }, [fen, mode, turn, isGameOver, chess, difficulty, sync]);
+  }, [fen, mode, turn, isGameOver, chess, difficulty, sync, soundOn, play]);
 
   // Show lobby
   if (mode === "network" && mp.status !== "connected") {
     return (
       <MultiplayerLobby
-        status={mp.status}
-        role={mp.role}
-        localCode={mp.localCode}
-        answerCode={mp.answerCode}
-        error={mp.error}
-        onCreateRoom={mp.createRoom}
-        onJoinRoom={mp.joinRoom}
-        onHandleAnswer={mp.handleAnswer}
-        onGenerateNext={mp.generateOfferForNext}
-        onDisconnect={mp.disconnect}
-        onBack={() => setMode("local")}
-        gameName="شطرنج"
-        peerCount={mp.peerCount}
-        peers={mp.peers}
+        status={mp.status} role={mp.role} localCode={mp.localCode}
+        answerCode={mp.answerCode} error={mp.error}
+        onCreateRoom={mp.createRoom} onJoinRoom={mp.joinRoom}
+        onHandleAnswer={mp.handleAnswer} onGenerateNext={mp.generateOfferForNext}
+        onDisconnect={mp.disconnect} onBack={() => setMode("local")}
+        gameName="شطرنج" peerCount={mp.peerCount} peers={mp.peers}
       />
     );
   }
@@ -236,15 +283,21 @@ const ChessGame = () => {
       : `دور ${turn === "w" ? "الأبيض" : "الأسود"}${aiThinking ? " (يفكر...)" : ""}`;
 
   return (
-    <div className="min-h-screen wood-texture flex flex-col items-center p-4">
-      <div className="w-full max-w-lg flex items-center justify-between mb-4">
-        <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold">
-          <ArrowLeft className="w-5 h-5 text-gold" />
+    <div className="min-h-screen wood-texture flex flex-col items-center p-2 sm:p-4">
+      {/* Header */}
+      <div className="w-full max-w-lg flex items-center justify-between mb-3 sm:mb-4">
+        <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
-        <h1 className="text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ شطرنج</h1>
-        <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold">
-          <Settings2 className="w-5 h-5 text-gold" />
-        </button>
+        <h1 className="text-xl sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ شطرنج</h1>
+        <div className="flex gap-1">
+          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+            {soundOn ? <Volume2 className="w-4 h-4 text-gold" /> : <VolumeX className="w-4 h-4 text-gold" />}
+          </button>
+          <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+            <Settings2 className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
+          </button>
+        </div>
       </div>
 
       {isNetworkMode && (
@@ -254,11 +307,11 @@ const ChessGame = () => {
         </div>
       )}
 
-      <p className="text-foreground text-sm mb-3">{statusText}</p>
+      <p className="text-foreground text-xs sm:text-sm mb-2 sm:mb-3">{statusText}</p>
 
-      {/* Board */}
-      <div className="border-4 border-gold rounded-lg overflow-hidden shadow-2xl">
-        <div className="grid grid-cols-8" style={{ width: "min(88vw, 400px)", height: "min(88vw, 400px)" }}>
+      {/* Board with 3D effect */}
+      <div className="board-3d border-4 border-gold rounded-lg overflow-hidden">
+        <div className="grid grid-cols-8" style={{ width: "min(90vw, 420px)", height: "min(90vw, 420px)" }}>
           {Array.from({ length: 64 }, (_, i) => {
             const r = Math.floor(i / 8);
             const c = i % 8;
@@ -274,44 +327,33 @@ const ChessGame = () => {
               <button
                 key={i}
                 onClick={() => handleSquareClick(sq)}
-                className="relative flex items-center justify-center transition-all"
+                className="relative flex items-center justify-center transition-all duration-150"
                 style={{
                   backgroundColor: isKingCheck ? "hsl(0 70% 50%)"
                     : isSelected ? "hsl(50 80% 55%)"
-                    : isLast ? "hsl(50 60% 65%)"
+                    : isLast ? "hsl(50 50% 60% / 0.7)"
                     : isLight ? themeColors.light : themeColors.dark,
                   aspectRatio: "1",
+                  boxShadow: isSelected ? "inset 0 0 12px hsl(50 80% 40% / 0.5)" : isKingCheck ? "inset 0 0 15px hsl(0 70% 30% / 0.6)" : "none",
                 }}
               >
                 {isLegal && !piece && (
-                  <div className="w-3 h-3 rounded-full bg-black/25" />
+                  <div className="w-[28%] h-[28%] rounded-full" style={{
+                    background: "radial-gradient(circle, hsl(0 0% 0% / 0.35) 0%, hsl(0 0% 0% / 0.15) 100%)",
+                  }} />
                 )}
                 {isLegal && piece && (
-                  <div className="absolute inset-0 border-4 border-black/25 rounded-sm" />
+                  <div className="absolute inset-[3px] rounded-sm border-[3px]" style={{
+                    borderColor: "hsl(0 0% 0% / 0.3)",
+                  }} />
                 )}
                 {piece && (
-                  <span
-                    className="select-none"
-                    style={{
-                      fontSize: pieceTheme === "minimal" ? "min(5vw, 26px)" : "min(6vw, 32px)",
-                      fontWeight: pieceTheme === "minimal" ? "bold" : "normal",
-                      textShadow: pieceTheme === "minimal" ? "none"
-                        : piece.color === "w" ? "1px 1px 2px rgba(0,0,0,0.5)" : "1px 1px 2px rgba(255,255,255,0.3)",
-                      color: pieceTheme === "minimal"
-                        ? (piece.color === "w" ? "#fff" : "#1a1a1a")
-                        : pieceTheme === "classic"
-                          ? (piece.color === "w" ? "#fff" : "#1a1a1a")
-                          : undefined,
-                      filter: pieceTheme === "classic"
-                        ? (piece.color === "w" ? "drop-shadow(0 1px 1px rgba(0,0,0,0.4))" : "drop-shadow(0 1px 1px rgba(255,255,255,0.2))")
-                        : "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
-                    }}
-                  >
+                  <span className="select-none piece-3d" style={PIECE_STYLES[pieceTheme](piece.color)}>
                     {currentPieces[piece.color][piece.type]}
                   </span>
                 )}
-                {r === 7 && <span className="absolute bottom-0 left-0.5 text-[8px] opacity-40">{String.fromCharCode(97 + c)}</span>}
-                {c === 0 && <span className="absolute top-0 left-0.5 text-[8px] opacity-40">{8 - r}</span>}
+                {r === 7 && <span className="absolute bottom-0 left-0.5 text-[7px] sm:text-[8px] opacity-30 font-sans">{String.fromCharCode(97 + c)}</span>}
+                {c === 0 && <span className="absolute top-0 left-0.5 text-[7px] sm:text-[8px] opacity-30 font-sans">{8 - r}</span>}
               </button>
             );
           })}
@@ -319,7 +361,7 @@ const ChessGame = () => {
       </div>
 
       {/* Controls */}
-      <div className="flex gap-3 mt-4">
+      <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4">
         <Button onClick={handleNetworkReset} variant="outline" size="sm" className="border-gold text-gold hover:bg-gold/10">
           <RotateCcw className="w-4 h-4 mr-1" /> جديدة
         </Button>
@@ -334,12 +376,13 @@ const ChessGame = () => {
       <Dialog open={!!promoDialog} onOpenChange={() => setPromoDialog(null)}>
         <DialogContent className="wood-texture border-2 border-gold max-w-xs">
           <DialogHeader><DialogTitle className="text-gold text-center">ترقية البيدق</DialogTitle></DialogHeader>
-          <div className="flex justify-center gap-4 py-4">
+          <div className="flex justify-center gap-3 sm:gap-4 py-4">
             {PROMO_PIECES.map((p) => (
               <button
                 key={p}
                 onClick={() => handlePromotion(p)}
-                className="text-4xl p-2 rounded-lg hover:bg-gold/20 transition-colors"
+                className="p-2 sm:p-3 rounded-xl hover:bg-gold/20 transition-all hover:scale-110 piece-3d"
+                style={{ ...PIECE_STYLES[pieceTheme](turn), fontSize: "min(10vw, 44px)" }}
               >
                 {currentPieces[turn][p]}
               </button>
@@ -382,9 +425,9 @@ const ChessGame = () => {
               <Select value={theme} onValueChange={(v: BoardTheme) => setTheme(v)}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wood">خشبي</SelectItem>
-                  <SelectItem value="marble">رخامي</SelectItem>
-                  <SelectItem value="plain">كلاسيكي</SelectItem>
+                  {Object.entries(THEMES).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -394,8 +437,8 @@ const ChessGame = () => {
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="classic">♔ كلاسيكي</SelectItem>
-                  <SelectItem value="modern">👑 عصري</SelectItem>
-                  <SelectItem value="fancy">🏆 فاخر</SelectItem>
+                  <SelectItem value="neo">✦ حديث</SelectItem>
+                  <SelectItem value="staunton">♚ ستاونتن</SelectItem>
                   <SelectItem value="minimal">Aa بسيط</SelectItem>
                 </SelectContent>
               </Select>
@@ -404,12 +447,10 @@ const ChessGame = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Tournament Manager */}
       {showTournament && (
         <div className="w-full max-w-lg mt-4">
           <TournamentManager
-            state={tournament.state}
-            isHost={isHost}
+            state={tournament.state} isHost={isHost}
             onSetPlayersPerMatch={tournament.setPlayersPerMatch}
             onAutoGroup={tournament.autoGroupPlayers}
             onStartTournament={tournament.startTournament}
@@ -420,10 +461,7 @@ const ChessGame = () => {
       )}
 
       {showSidebar && (
-        <MatchSidebar
-          matches={tournament.state.matches}
-          getPlayerName={tournament.getPlayerName}
-        />
+        <MatchSidebar matches={tournament.state.matches} getPlayerName={tournament.getPlayerName} />
       )}
     </div>
   );
