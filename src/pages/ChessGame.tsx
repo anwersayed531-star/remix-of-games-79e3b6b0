@@ -220,6 +220,9 @@ const ChessGame = () => {
     );
   }
 
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
+
   const getSquareName = (r: number, c: number) => `${String.fromCharCode(97 + c)}${8 - r}`;
   const themeColors = THEMES[theme];
 
