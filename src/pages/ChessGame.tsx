@@ -7,7 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { findBestMove } from "@/lib/chessAI";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
+import TournamentManager from "@/components/TournamentManager";
+import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useTournament } from "@/hooks/useTournament";
 
 type Mode = "local" | "ai" | "network";
 type Difficulty = "easy" | "medium" | "hard";
