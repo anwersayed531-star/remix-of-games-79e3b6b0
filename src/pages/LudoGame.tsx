@@ -401,6 +401,9 @@ const LudoGame = () => {
     );
   }
 
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
+
   // Build piece map for rendering
   const pieceMap = new Map<string, Piece[]>();
   for (const p of pieces) {
