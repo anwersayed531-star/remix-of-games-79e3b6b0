@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
+import TournamentManager from "@/components/TournamentManager";
+import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useTournament } from "@/hooks/useTournament";
 
 type Cell = string | null;
 type Mode = "local" | "ai" | "network";
