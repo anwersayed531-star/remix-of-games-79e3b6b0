@@ -403,6 +403,28 @@ const ChessGame = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tournament Manager */}
+      {showTournament && (
+        <div className="w-full max-w-lg mt-4">
+          <TournamentManager
+            state={tournament.state}
+            isHost={isHost}
+            onSetPlayersPerMatch={tournament.setPlayersPerMatch}
+            onAutoGroup={tournament.autoGroupPlayers}
+            onStartTournament={tournament.startTournament}
+            onStartSetup={tournament.startSetup}
+            getPlayerName={tournament.getPlayerName}
+          />
+        </div>
+      )}
+
+      {showSidebar && (
+        <MatchSidebar
+          matches={tournament.state.matches}
+          getPlayerName={tournament.getPlayerName}
+        />
+      )}
     </div>
   );
 };

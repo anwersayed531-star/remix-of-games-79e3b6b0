@@ -331,6 +331,29 @@ const XOGame = () => {
         <RotateCcw className="w-4 h-4 mr-2" /> جولة جديدة
       </Button>
 
+      {/* Tournament Manager */}
+      {showTournament && (
+        <div className="w-full max-w-lg mt-4">
+          <TournamentManager
+            state={tournament.state}
+            isHost={isHost}
+            onSetPlayersPerMatch={tournament.setPlayersPerMatch}
+            onAutoGroup={tournament.autoGroupPlayers}
+            onStartTournament={tournament.startTournament}
+            onStartSetup={tournament.startSetup}
+            getPlayerName={tournament.getPlayerName}
+          />
+        </div>
+      )}
+
+      {/* Match Sidebar */}
+      {showSidebar && (
+        <MatchSidebar
+          matches={tournament.state.matches}
+          getPlayerName={tournament.getPlayerName}
+        />
+      )}
+
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="wood-texture border-2 border-gold max-w-sm">
