@@ -7,7 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { findBestMove } from "@/lib/chessAI";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
+import TournamentManager from "@/components/TournamentManager";
+import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useTournament } from "@/hooks/useTournament";
 
 type Mode = "local" | "ai" | "network";
 type Difficulty = "easy" | "medium" | "hard";
@@ -61,6 +64,8 @@ const ChessGame = () => {
   const [aiThinking, setAiThinking] = useState(false);
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHost = mp.role === "host";
 
   const chess = chessRef.current;
   const board = chess.board();
@@ -214,6 +219,9 @@ const ChessGame = () => {
       />
     );
   }
+
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
 
   const getSquareName = (r: number, c: number) => `${String.fromCharCode(97 + c)}${8 - r}`;
   const themeColors = THEMES[theme];
@@ -395,6 +403,28 @@ const ChessGame = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tournament Manager */}
+      {showTournament && (
+        <div className="w-full max-w-lg mt-4">
+          <TournamentManager
+            state={tournament.state}
+            isHost={isHost}
+            onSetPlayersPerMatch={tournament.setPlayersPerMatch}
+            onAutoGroup={tournament.autoGroupPlayers}
+            onStartTournament={tournament.startTournament}
+            onStartSetup={tournament.startSetup}
+            getPlayerName={tournament.getPlayerName}
+          />
+        </div>
+      )}
+
+      {showSidebar && (
+        <MatchSidebar
+          matches={tournament.state.matches}
+          getPlayerName={tournament.getPlayerName}
+        />
+      )}
     </div>
   );
 };

@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
+import TournamentManager from "@/components/TournamentManager";
+import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useTournament } from "@/hooks/useTournament";
 
 type Cell = string | null;
 type Mode = "local" | "ai" | "network";
@@ -33,6 +36,8 @@ const XOGame = () => {
   const [scores, setScores] = useState({ x: 0, o: 0, draw: 0 });
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHost = mp.role === "host";
 
   const symbols = SYMBOL_SETS[symbolSet];
   const totalCells = gridSize * gridSize;
@@ -228,6 +233,10 @@ const XOGame = () => {
     );
   }
 
+  // Show tournament setup when connected with multiple peers
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
+
   const cellSize = gridSize <= 3 ? "w-20 h-20 sm:w-24 sm:h-24 text-3xl sm:text-4xl" :
     gridSize <= 4 ? "w-16 h-16 sm:w-20 sm:h-20 text-2xl sm:text-3xl" :
       "w-12 h-12 sm:w-16 sm:h-16 text-xl sm:text-2xl";
@@ -321,6 +330,29 @@ const XOGame = () => {
       <Button onClick={handleNetworkReset} variant="outline" className="mt-6 border-gold text-gold hover:bg-gold/10">
         <RotateCcw className="w-4 h-4 mr-2" /> جولة جديدة
       </Button>
+
+      {/* Tournament Manager */}
+      {showTournament && (
+        <div className="w-full max-w-lg mt-4">
+          <TournamentManager
+            state={tournament.state}
+            isHost={isHost}
+            onSetPlayersPerMatch={tournament.setPlayersPerMatch}
+            onAutoGroup={tournament.autoGroupPlayers}
+            onStartTournament={tournament.startTournament}
+            onStartSetup={tournament.startSetup}
+            getPlayerName={tournament.getPlayerName}
+          />
+        </div>
+      )}
+
+      {/* Match Sidebar */}
+      {showSidebar && (
+        <MatchSidebar
+          matches={tournament.state.matches}
+          getPlayerName={tournament.getPlayerName}
+        />
+      )}
 
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>

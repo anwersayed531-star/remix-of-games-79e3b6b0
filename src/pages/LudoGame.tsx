@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MultiplayerLobby from "@/components/MultiplayerLobby";
+import TournamentManager from "@/components/TournamentManager";
+import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useTournament } from "@/hooks/useTournament";
 
 type PlayerColor = "red" | "green" | "yellow" | "blue";
 const ALL_COLORS: PlayerColor[] = ["red", "green", "yellow", "blue"];
@@ -119,6 +122,8 @@ const LudoGame = () => {
   const [animCoords, setAnimCoords] = useState<[number, number] | null>(null);
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHostPlayer = mp.role === "host";
   const isNetworkMode = gameMode === "network" && mp.status === "connected";
   const myColor: PlayerColor = mp.role === "host" ? "red" : "green";
 
@@ -395,6 +400,9 @@ const LudoGame = () => {
       />
     );
   }
+
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
 
   // Build piece map for rendering
   const pieceMap = new Map<string, Piece[]>();
@@ -673,6 +681,28 @@ const LudoGame = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tournament Manager */}
+      {showTournament && (
+        <div className="w-full max-w-lg mt-4">
+          <TournamentManager
+            state={tournament.state}
+            isHost={isHostPlayer}
+            onSetPlayersPerMatch={tournament.setPlayersPerMatch}
+            onAutoGroup={tournament.autoGroupPlayers}
+            onStartTournament={tournament.startTournament}
+            onStartSetup={tournament.startSetup}
+            getPlayerName={tournament.getPlayerName}
+          />
+        </div>
+      )}
+
+      {showSidebar && (
+        <MatchSidebar
+          matches={tournament.state.matches}
+          getPlayerName={tournament.getPlayerName}
+        />
+      )}
     </div>
   );
 };

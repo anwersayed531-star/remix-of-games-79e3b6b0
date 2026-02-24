@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Settings, Dice5, Grid3X3, Crown } from "lucide-react";
+import { Settings, Dice5, Grid3X3, Crown, Trophy } from "lucide-react";
 import { useState } from "react";
 import SettingsDialog from "@/components/SettingsDialog";
 
@@ -30,6 +30,15 @@ const games = [
     path: "/ludo",
     color: "from-blue-900/60 to-indigo-900/60",
     border: "border-blue-700/40",
+  },
+  {
+    id: "tournament",
+    title: "بطولة",
+    subtitle: "Tournament",
+    icon: Trophy,
+    path: "/tournament",
+    color: "from-amber-900/60 to-yellow-900/60",
+    border: "border-amber-700/40",
   },
 ];
 
