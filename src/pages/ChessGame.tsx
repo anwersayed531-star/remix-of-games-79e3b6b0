@@ -64,6 +64,8 @@ const ChessGame = () => {
   const [aiThinking, setAiThinking] = useState(false);
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHost = mp.role === "host";
 
   const chess = chessRef.current;
   const board = chess.board();
