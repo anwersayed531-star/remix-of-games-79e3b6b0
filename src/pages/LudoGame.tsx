@@ -122,6 +122,8 @@ const LudoGame = () => {
   const [animCoords, setAnimCoords] = useState<[number, number] | null>(null);
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHostPlayer = mp.role === "host";
   const isNetworkMode = gameMode === "network" && mp.status === "connected";
   const myColor: PlayerColor = mp.role === "host" ? "red" : "green";
 
