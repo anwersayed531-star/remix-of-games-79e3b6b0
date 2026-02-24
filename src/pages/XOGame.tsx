@@ -233,6 +233,10 @@ const XOGame = () => {
     );
   }
 
+  // Show tournament setup when connected with multiple peers
+  const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
+  const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
+
   const cellSize = gridSize <= 3 ? "w-20 h-20 sm:w-24 sm:h-24 text-3xl sm:text-4xl" :
     gridSize <= 4 ? "w-16 h-16 sm:w-20 sm:h-20 text-2xl sm:text-3xl" :
       "w-12 h-12 sm:w-16 sm:h-16 text-xl sm:text-2xl";
