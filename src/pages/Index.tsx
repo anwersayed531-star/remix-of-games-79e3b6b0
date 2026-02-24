@@ -10,8 +10,8 @@ const games = [
     subtitle: "تيك تاك تو",
     icon: Grid3X3,
     path: "/xo",
-    color: "from-red-900/60 to-orange-900/60",
-    border: "border-red-700/40",
+    gradient: "from-destructive/40 to-primary/30",
+    borderColor: "border-destructive/30",
   },
   {
     id: "chess",
@@ -19,8 +19,8 @@ const games = [
     subtitle: "Chess",
     icon: Crown,
     path: "/chess",
-    color: "from-emerald-900/60 to-teal-900/60",
-    border: "border-emerald-700/40",
+    gradient: "from-primary/40 to-accent/30",
+    borderColor: "border-primary/30",
   },
   {
     id: "ludo",
@@ -28,8 +28,8 @@ const games = [
     subtitle: "Ludo",
     icon: Dice5,
     path: "/ludo",
-    color: "from-blue-900/60 to-indigo-900/60",
-    border: "border-blue-700/40",
+    gradient: "from-accent/40 to-primary/30",
+    borderColor: "border-accent/30",
   },
   {
     id: "tournament",
@@ -37,8 +37,8 @@ const games = [
     subtitle: "Tournament",
     icon: Trophy,
     path: "/tournament",
-    color: "from-amber-900/60 to-yellow-900/60",
-    border: "border-amber-700/40",
+    gradient: "from-accent/50 to-destructive/30",
+    borderColor: "border-accent/30",
   },
 ];
 
@@ -47,53 +47,56 @@ const Index = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <div className="min-h-screen wood-texture flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen wood-texture flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden">
       {/* Decorative border */}
-      <div className="absolute inset-2 sm:inset-4 border-2 border-gold rounded-2xl pointer-events-none opacity-30" />
-      <div className="absolute inset-3 sm:inset-6 border border-gold rounded-xl pointer-events-none opacity-15" />
+      <div className="absolute inset-2 sm:inset-4 border-2 border-gold rounded-2xl pointer-events-none opacity-20" />
+      <div className="absolute inset-3 sm:inset-6 border border-gold rounded-xl pointer-events-none opacity-10" />
 
       {/* Settings button */}
       <button
         onClick={() => setSettingsOpen(true)}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 p-3 rounded-full bg-secondary/80 hover:bg-secondary transition-colors border border-gold"
+        className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 p-2.5 sm:p-3 rounded-full bg-secondary/80 hover:bg-secondary transition-colors border border-gold"
       >
-        <Settings className="w-5 h-5 text-gold" />
+        <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
       </button>
 
       {/* Title */}
-      <div className="text-center mb-8 sm:mb-12 animate-fade-in">
-        <h1 className="text-3xl sm:text-5xl font-bold text-gold mb-2 tracking-wider" style={{ fontFamily: "'Cinzel', serif" }}>
+      <div className="text-center mb-6 sm:mb-12 animate-fade-in">
+        <h1 className="text-2xl sm:text-5xl font-bold text-gold mb-2 tracking-wider" style={{ fontFamily: "'Cinzel', serif" }}>
           🎮 Game Hub
         </h1>
-        <p className="text-muted-foreground text-sm sm:text-base" style={{ fontFamily: "'Amiri', serif" }}>
+        <p className="text-muted-foreground text-xs sm:text-base" style={{ fontFamily: "'Amiri', serif" }}>
           ألعاب كلاسيكية بتصميم أنيق
         </p>
-        <div className="w-32 sm:w-48 h-0.5 gold-gradient mx-auto mt-4 rounded-full" />
+        <div className="w-24 sm:w-48 h-0.5 gold-gradient mx-auto mt-3 sm:mt-4 rounded-full" />
       </div>
 
       {/* Game Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 w-full max-w-3xl px-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 w-full max-w-3xl px-2">
         {games.map((game, i) => (
           <button
             key={game.id}
             onClick={() => navigate(game.path)}
-            className={`group relative rounded-xl border-2 ${game.border} bg-gradient-to-br ${game.color} 
-              p-6 sm:p-8 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-amber-900/20
+            className={`group card-3d relative rounded-xl border-2 ${game.borderColor} bg-gradient-to-br ${game.gradient} 
+              p-4 sm:p-8 transition-all duration-300 hover:scale-105
               backdrop-blur-sm animate-fade-in`}
-            style={{ animationDelay: `${i * 100}ms` }}
+            style={{
+              animationDelay: `${i * 100}ms`,
+              background: `linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)`,
+            }}
           >
             <div className="absolute inset-0 rounded-xl border border-gold opacity-0 group-hover:opacity-30 transition-opacity" />
-            <game.icon className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gold group-hover:scale-110 transition-transform" />
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "'Cinzel', serif" }}>
+            <game.icon className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gold group-hover:scale-110 transition-transform" />
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "'Cinzel', serif" }}>
               {game.title}
             </h2>
-            <p className="text-muted-foreground text-xs sm:text-sm">{game.subtitle}</p>
+            <p className="text-muted-foreground text-[10px] sm:text-sm">{game.subtitle}</p>
           </button>
         ))}
       </div>
 
       {/* Footer */}
-      <p className="mt-8 sm:mt-12 text-muted-foreground text-xs opacity-50">
+      <p className="mt-6 sm:mt-12 text-muted-foreground text-[10px] sm:text-xs opacity-50">
         Classic Games Collection v1.0
       </p>
 
