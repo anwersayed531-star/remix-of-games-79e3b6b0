@@ -31,6 +31,15 @@ const games = [
     color: "from-blue-900/60 to-indigo-900/60",
     border: "border-blue-700/40",
   },
+  {
+    id: "tournament",
+    title: "بطولة",
+    subtitle: "Tournament",
+    icon: Trophy,
+    path: "/tournament",
+    color: "from-amber-900/60 to-yellow-900/60",
+    border: "border-amber-700/40",
+  },
 ];
 
 const Index = () => {
