@@ -36,6 +36,8 @@ const XOGame = () => {
   const [scores, setScores] = useState({ x: 0, o: 0, draw: 0 });
 
   const mp = useMultiplayerSync();
+  const tournament = useTournament();
+  const isHost = mp.role === "host";
 
   const symbols = SYMBOL_SETS[symbolSet];
   const totalCells = gridSize * gridSize;
