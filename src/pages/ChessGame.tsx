@@ -52,7 +52,8 @@ const PIECE_THEMES: Record<PieceTheme, { name: string; w: Record<string, string>
 // Piece styling per theme
 const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties> = {
   classic: (color) => ({
-    fontSize: "min(7vw, 36px)",
+    fontSize: "min(5.5vw, 36px)",
+    lineHeight: 1,
     color: color === "w" ? "#fff" : "#1a1a1a",
     textShadow: color === "w"
       ? "0 1px 3px rgba(0,0,0,0.6), 0 0 8px rgba(255,255,255,0.2)"
@@ -60,7 +61,8 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
     filter: `drop-shadow(0 2px 3px rgba(0,0,0,0.4))`,
   }),
   neo: (color) => ({
-    fontSize: "min(7vw, 36px)",
+    fontSize: "min(5.5vw, 36px)",
+    lineHeight: 1,
     color: color === "w" ? "#f5f0e8" : "#2c1810",
     textShadow: color === "w"
       ? "0 0 10px rgba(212,167,106,0.6), 0 2px 4px rgba(0,0,0,0.5)"
@@ -69,7 +71,8 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
     fontWeight: "bold",
   }),
   staunton: (color) => ({
-    fontSize: "min(8vw, 40px)",
+    fontSize: "min(6vw, 38px)",
+    lineHeight: 1,
     color: color === "w" ? "#faf3e8" : "#3d2b1f",
     textShadow: color === "w"
       ? "0 1px 2px rgba(0,0,0,0.5), 1px 0 0 rgba(139,94,60,0.3), -1px 0 0 rgba(139,94,60,0.3)"
@@ -78,7 +81,8 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
     WebkitTextStroke: color === "w" ? "0.5px rgba(139,94,60,0.4)" : "0.5px rgba(0,0,0,0.3)",
   }),
   minimal: (color) => ({
-    fontSize: "min(5vw, 26px)",
+    fontSize: "min(4.5vw, 26px)",
+    lineHeight: 1,
     fontWeight: "bold",
     fontFamily: "'Cinzel', serif",
     color: color === "w" ? "#faf3e8" : "#2c1810",
@@ -310,8 +314,8 @@ const ChessGame = () => {
       <p className="text-foreground text-xs sm:text-sm mb-1 sm:mb-3">{statusText}</p>
 
       {/* Board with 3D effect */}
-      <div className="board-3d border-2 sm:border-4 border-gold rounded-lg overflow-hidden">
-        <div className="grid grid-cols-8" style={{ width: "min(calc(100vw - 8px), 420px)", height: "min(calc(100vw - 8px), 420px)" }}>
+      <div className="board-3d border-2 sm:border-4 border-gold rounded-lg">
+        <div className="grid grid-cols-8 overflow-hidden rounded-sm" style={{ width: "min(calc(100vw - 16px), 420px)", height: "min(calc(100vw - 16px), 420px)" }}>
           {Array.from({ length: 64 }, (_, i) => {
             const r = Math.floor(i / 8);
             const c = i % 8;
@@ -348,7 +352,7 @@ const ChessGame = () => {
                   }} />
                 )}
                 {piece && (
-                  <span className="select-none piece-3d" style={PIECE_STYLES[pieceTheme](piece.color)}>
+                  <span className="select-none piece-3d flex items-center justify-center w-full h-full" style={{ ...PIECE_STYLES[pieceTheme](piece.color), overflow: "hidden" }}>
                     {currentPieces[piece.color][piece.type]}
                   </span>
                 )}
