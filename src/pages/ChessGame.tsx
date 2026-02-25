@@ -309,9 +309,9 @@ const ChessGame = () => {
 
       <p className="text-foreground text-xs sm:text-sm mb-1 sm:mb-3">{statusText}</p>
 
-      {/* Board with 3D effect - always fully visible */}
-      <div className="board-3d border-2 sm:border-4 border-gold rounded-lg overflow-hidden flex-shrink-0">
-        <div className="grid grid-cols-8" style={{ width: "min(calc(100vw - 8px), calc(100dvh - 120px), 420px)", height: "min(calc(100vw - 8px), calc(100dvh - 120px), 420px)" }}>
+      {/* Board with 3D effect */}
+      <div className="board-3d border-2 sm:border-4 border-gold rounded-lg overflow-hidden">
+        <div className="grid grid-cols-8" style={{ width: "min(calc(100vw - 8px), 420px)", height: "min(calc(100vw - 8px), 420px)" }}>
           {Array.from({ length: 64 }, (_, i) => {
             const r = Math.floor(i / 8);
             const c = i % 8;
