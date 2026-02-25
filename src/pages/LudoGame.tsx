@@ -521,9 +521,9 @@ const LudoGame = () => {
   };
 
   return (
-    <div className="min-h-screen wood-texture flex flex-col items-center p-2 sm:p-3">
+    <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-3">
       {/* Header */}
-      <div className="w-full max-w-lg flex items-center justify-between mb-2 sm:mb-3">
+      <div className="w-full max-w-lg flex items-center justify-between mb-1 sm:mb-3">
         <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
@@ -564,8 +564,8 @@ const LudoGame = () => {
 
       {/* Board with 3D effect */}
       <div
-        className="board-3d border-4 border-gold rounded-xl overflow-hidden"
-        style={{ width: "min(92vw, 420px)", height: "min(92vw, 420px)" }}
+        className="board-3d border-2 sm:border-4 border-gold rounded-xl overflow-hidden"
+        style={{ width: "min(calc(100vw - 8px), 420px)", height: "min(calc(100vw - 8px), 420px)" }}
       >
         <div className="grid grid-cols-[repeat(15,1fr)] w-full h-full">
           {Array.from({ length: 225 }, (_, i) => {

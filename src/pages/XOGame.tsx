@@ -180,18 +180,18 @@ const XOGame = () => {
   const showTournament = isNetworkMode && mp.peerCount > 1 && tournament.state.phase !== "playing";
   const showSidebar = isNetworkMode && tournament.state.matches.length > 0;
 
-  const cellSize = gridSize <= 3 ? "w-20 h-20 sm:w-24 sm:h-24 text-3xl sm:text-4xl"
-    : gridSize <= 4 ? "w-16 h-16 sm:w-20 sm:h-20 text-2xl sm:text-3xl"
-    : "w-12 h-12 sm:w-16 sm:h-16 text-xl sm:text-2xl";
+  const cellSize = gridSize <= 3 ? "w-[min(22vw,5rem)] h-[min(22vw,5rem)] sm:w-24 sm:h-24 text-2xl sm:text-4xl"
+    : gridSize <= 4 ? "w-[min(18vw,4rem)] h-[min(18vw,4rem)] sm:w-20 sm:h-20 text-xl sm:text-3xl"
+    : "w-[min(14vw,3rem)] h-[min(14vw,3rem)] sm:w-16 sm:h-16 text-lg sm:text-2xl";
 
   const turnLabel = isNetworkMode
     ? (isMyTurn ? `دورك (${symbols[mySymbol === "X" ? 0 : 1]})` : `دور الخصم (${symbols[mySymbol === "X" ? 1 : 0]})`)
     : `دور: ${isXTurn ? symbols[0] : symbols[1]} ${mode === "ai" && !isXTurn ? "(يفكر...)" : ""}`;
 
   return (
-    <div className="min-h-screen wood-texture flex flex-col items-center p-2 sm:p-4">
+    <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-4">
       {/* Header */}
-      <div className="w-full max-w-lg flex items-center justify-between mb-4 sm:mb-6">
+      <div className="w-full max-w-lg flex items-center justify-between mb-2 sm:mb-6">
         <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>

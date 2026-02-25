@@ -283,18 +283,18 @@ const ChessGame = () => {
       : `دور ${turn === "w" ? "الأبيض" : "الأسود"}${aiThinking ? " (يفكر...)" : ""}`;
 
   return (
-    <div className="min-h-screen wood-texture flex flex-col items-center p-2 sm:p-4">
+    <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-4">
       {/* Header */}
-      <div className="w-full max-w-lg flex items-center justify-between mb-3 sm:mb-4">
-        <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+      <div className="w-full max-w-lg flex items-center justify-between mb-1 sm:mb-4">
+        <button onClick={() => navigate("/")} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
-        <h1 className="text-xl sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ شطرنج</h1>
+        <h1 className="text-lg sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ شطرنج</h1>
         <div className="flex gap-1">
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+          <button onClick={() => setSoundOn(!soundOn)} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
             {soundOn ? <Volume2 className="w-4 h-4 text-gold" /> : <VolumeX className="w-4 h-4 text-gold" />}
           </button>
-          <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+          <button onClick={() => setSettingsOpen(true)} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
             <Settings2 className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
           </button>
         </div>
@@ -307,11 +307,11 @@ const ChessGame = () => {
         </div>
       )}
 
-      <p className="text-foreground text-xs sm:text-sm mb-2 sm:mb-3">{statusText}</p>
+      <p className="text-foreground text-xs sm:text-sm mb-1 sm:mb-3">{statusText}</p>
 
       {/* Board with 3D effect */}
-      <div className="board-3d border-4 border-gold rounded-lg overflow-hidden">
-        <div className="grid grid-cols-8" style={{ width: "min(90vw, 420px)", height: "min(90vw, 420px)" }}>
+      <div className="board-3d border-2 sm:border-4 border-gold rounded-lg overflow-hidden">
+        <div className="grid grid-cols-8" style={{ width: "min(calc(100vw - 8px), 420px)", height: "min(calc(100vw - 8px), 420px)" }}>
           {Array.from({ length: 64 }, (_, i) => {
             const r = Math.floor(i / 8);
             const c = i % 8;
@@ -361,7 +361,7 @@ const ChessGame = () => {
       </div>
 
       {/* Controls */}
-      <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4">
+      <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-4">
         <Button onClick={handleNetworkReset} variant="outline" size="sm" className="border-gold text-gold hover:bg-gold/10">
           <RotateCcw className="w-4 h-4 mr-1" /> جديدة
         </Button>
