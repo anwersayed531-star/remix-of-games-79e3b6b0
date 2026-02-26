@@ -99,8 +99,8 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
 
 const PROMO_PIECES = ["q", "r", "b", "n"] as const;
 
-  const { t } = useLanguage();
 const ChessGame = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const chessRef = useRef(new Chess());
   const [fen, setFen] = useState(chessRef.current.fen());
