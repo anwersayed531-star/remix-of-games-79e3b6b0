@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowLeft, RotateCcw, Settings2, Dice5, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -125,6 +126,7 @@ const DiceFace = ({ value, size = 56, rolling = false }: { value: number; size?:
 };
 
 const LudoGame = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [gameMode, setGameMode] = useState<GameMode>("local");
   const [playerCount, setPlayerCount] = useState(4);
@@ -524,10 +526,10 @@ const LudoGame = () => {
     <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-3">
       {/* Header */}
       <div className="w-full max-w-lg flex items-center justify-between mb-1 sm:mb-3">
-        <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+        <button onClick={() => navigate("/home")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
-        <h1 className="text-xl sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>🎲 لودو</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>🎲 {t("ludo_title")}</h1>
         <div className="flex gap-1">
           <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
             {soundOn ? <Volume2 className="w-4 h-4 text-gold" /> : <VolumeX className="w-4 h-4 text-gold" />}
@@ -644,30 +646,30 @@ const LudoGame = () => {
       {/* Winner */}
       {winner && (
         <div className="mt-4 p-4 rounded-xl border-2 border-gold bg-card/80 text-center animate-celebrate">
-          <p className="text-xl sm:text-2xl font-bold text-gold">🏆 فاز {COLOR_NAMES[winner]}!</p>
-          <Button onClick={handleNetworkReset} className="mt-2 gold-gradient text-background font-bold">لعبة جديدة</Button>
+          <p className="text-xl sm:text-2xl font-bold text-gold">🏆 {COLOR_NAMES[winner]} {t("wins")}</p>
+          <Button onClick={handleNetworkReset} className="mt-2 gold-gradient text-background font-bold">{t("new_game")}</Button>
         </div>
       )}
 
       {/* Settings */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="wood-texture border-2 border-gold max-w-sm">
-          <DialogHeader><DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>إعدادات لودو</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>{t("game_settings")} {t("ludo_title")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-foreground text-sm mb-2 block">وضع اللعب</label>
+              <label className="text-foreground text-sm mb-2 block">{t("game_mode")}</label>
               <Select value={gameMode} onValueChange={(v: GameMode) => { setGameMode(v); }}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="local">محلي</SelectItem>
-                  <SelectItem value="network">عبر الشبكة 📶</SelectItem>
+                  <SelectItem value="local">{t("local_play")}</SelectItem>
+                  <SelectItem value="network">{t("online")} 📶</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {gameMode === "local" && (
               <>
                 <div>
-                  <label className="text-foreground text-sm mb-2 block">عدد اللاعبين</label>
+                  <label className="text-foreground text-sm mb-2 block">{t("num_players")}</label>
                   <Select value={String(playerCount)} onValueChange={(v) => { setPlayerCount(Number(v)); }}>
                     <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -697,7 +699,7 @@ const LudoGame = () => {
               </>
             )}
             <div>
-              <label className="text-foreground text-sm mb-2 block">شكل القطع</label>
+              <label className="text-foreground text-sm mb-2 block">{t("piece_style")}</label>
               <Select value={pieceTheme} onValueChange={(v: PieceTheme) => setPieceTheme(v)}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>

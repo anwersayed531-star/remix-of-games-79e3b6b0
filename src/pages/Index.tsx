@@ -1,50 +1,52 @@
 import { useNavigate } from "react-router-dom";
-import { Settings, Dice5, Grid3X3, Crown, Trophy } from "lucide-react";
+import { Settings, Dice5, Grid3X3, Crown, Trophy, Globe } from "lucide-react";
 import { useState } from "react";
 import SettingsDialog from "@/components/SettingsDialog";
-
-const games = [
-  {
-    id: "xo",
-    title: "XO",
-    subtitle: "تيك تاك تو",
-    icon: Grid3X3,
-    path: "/xo",
-    gradient: "from-destructive/40 to-primary/30",
-    borderColor: "border-destructive/30",
-  },
-  {
-    id: "chess",
-    title: "شطرنج",
-    subtitle: "Chess",
-    icon: Crown,
-    path: "/chess",
-    gradient: "from-primary/40 to-accent/30",
-    borderColor: "border-primary/30",
-  },
-  {
-    id: "ludo",
-    title: "لودو",
-    subtitle: "Ludo",
-    icon: Dice5,
-    path: "/ludo",
-    gradient: "from-accent/40 to-primary/30",
-    borderColor: "border-accent/30",
-  },
-  {
-    id: "tournament",
-    title: "بطولة",
-    subtitle: "Tournament",
-    icon: Trophy,
-    path: "/tournament",
-    gradient: "from-accent/50 to-destructive/30",
-    borderColor: "border-accent/30",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { t } = useLanguage();
+
+  const games = [
+    {
+      id: "xo",
+      title: t("xo_title"),
+      subtitle: t("xo_subtitle"),
+      icon: Grid3X3,
+      path: "/xo",
+      gradient: "from-destructive/40 to-primary/30",
+      borderColor: "border-destructive/30",
+    },
+    {
+      id: "chess",
+      title: t("chess_title"),
+      subtitle: t("chess_subtitle"),
+      icon: Crown,
+      path: "/chess",
+      gradient: "from-primary/40 to-accent/30",
+      borderColor: "border-primary/30",
+    },
+    {
+      id: "ludo",
+      title: t("ludo_title"),
+      subtitle: t("ludo_subtitle"),
+      icon: Dice5,
+      path: "/ludo",
+      gradient: "from-accent/40 to-primary/30",
+      borderColor: "border-accent/30",
+    },
+    {
+      id: "tournament",
+      title: t("tournament_title"),
+      subtitle: t("tournament_subtitle"),
+      icon: Trophy,
+      path: "/tournament",
+      gradient: "from-accent/50 to-destructive/30",
+      borderColor: "border-accent/30",
+    },
+  ];
 
   return (
     <div className="min-h-screen wood-texture flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden">
@@ -63,10 +65,10 @@ const Index = () => {
       {/* Title */}
       <div className="text-center mb-6 sm:mb-12 animate-fade-in">
         <h1 className="text-2xl sm:text-5xl font-bold text-gold mb-2 tracking-wider" style={{ fontFamily: "'Cinzel', serif" }}>
-          🎮 Game Hub
+          {t("app_title")}
         </h1>
         <p className="text-muted-foreground text-xs sm:text-base" style={{ fontFamily: "'Amiri', serif" }}>
-          ألعاب كلاسيكية بتصميم أنيق
+          {t("app_subtitle")}
         </p>
         <div className="w-24 sm:w-48 h-0.5 gold-gradient mx-auto mt-3 sm:mt-4 rounded-full" />
       </div>
@@ -97,7 +99,7 @@ const Index = () => {
 
       {/* Footer */}
       <p className="mt-6 sm:mt-12 text-muted-foreground text-[10px] sm:text-xs opacity-50">
-        Classic Games Collection v1.0
+        {t("footer_text")}
       </p>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />

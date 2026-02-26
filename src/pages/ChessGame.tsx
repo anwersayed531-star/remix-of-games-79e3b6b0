@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Chess } from "chess.js";
 import { ArrowLeft, RotateCcw, Settings2, Undo2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,11 @@ type Difficulty = "easy" | "medium" | "hard";
 type BoardTheme = "wood" | "marble" | "plain" | "emerald";
 type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
-const THEMES: Record<BoardTheme, { light: string; dark: string; name: string }> = {
-  wood: { light: "#d4a76a", dark: "#8b5e3c", name: "خشبي" },
-  marble: { light: "#e8e0d0", dark: "#8a8178", name: "رخامي" },
-  plain: { light: "#f0d9b5", dark: "#b58863", name: "كلاسيكي" },
-  emerald: { light: "#ffffdd", dark: "#6baa58", name: "زمردي" },
+const THEMES: Record<BoardTheme, { light: string; dark: string; nameKey: string }> = {
+  wood: { light: "#d4a76a", dark: "#8b5e3c", nameKey: "theme_wood" },
+  marble: { light: "#e8e0d0", dark: "#8a8178", nameKey: "theme_marble" },
+  plain: { light: "#f0d9b5", dark: "#b58863", nameKey: "theme_plain" },
+  emerald: { light: "#ffffdd", dark: "#6baa58", nameKey: "theme_emerald" },
 };
 
 // More realistic-looking piece sets using distinct Unicode/emoji combinations
@@ -99,6 +100,7 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
 const PROMO_PIECES = ["q", "r", "b", "n"] as const;
 
 const ChessGame = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const chessRef = useRef(new Chess());
   const [fen, setFen] = useState(chessRef.current.fen());
@@ -278,22 +280,22 @@ const ChessGame = () => {
   const themeColors = THEMES[theme];
 
   const statusText = isCheckmate
-    ? `🏆 كش مات! فاز ${turn === "w" ? "الأسود" : "الأبيض"}`
-    : isStalemate ? "🤝 تعادل - لا حركات متاحة"
-    : isDraw ? "🤝 تعادل"
-    : isCheck ? `⚠️ كش! دور ${turn === "w" ? "الأبيض" : "الأسود"}`
+    ? `🏆 ${turn === "w" ? t("checkmate_black") : t("checkmate_white")}`
+    : isStalemate ? `🤝 ${t("stalemate")}`
+    : isDraw ? `🤝 ${t("draw_game")}`
+    : isCheck ? `⚠️ ${t("check")} ${turn === "w" ? t("white_turn") : t("black_turn")}`
     : isNetworkMode
-      ? (isMyTurn ? "دورك" : "دور الخصم")
-      : `دور ${turn === "w" ? "الأبيض" : "الأسود"}${aiThinking ? " (يفكر...)" : ""}`;
+      ? (isMyTurn ? t("your_turn") : t("opponent_turn"))
+      : `${turn === "w" ? t("white_turn") : t("black_turn")}${aiThinking ? ` (${t("ai_thinking")})` : ""}`;
 
   return (
     <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-4">
       {/* Header */}
       <div className="w-full max-w-lg flex items-center justify-between mb-1 sm:mb-4">
-        <button onClick={() => navigate("/")} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+        <button onClick={() => navigate("/home")} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
-        <h1 className="text-lg sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ شطرنج</h1>
+        <h1 className="text-lg sm:text-2xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>♟️ {t("chess_title")}</h1>
         <div className="flex gap-1">
           <button onClick={() => setSoundOn(!soundOn)} className="p-1.5 sm:p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
             {soundOn ? <Volume2 className="w-4 h-4 text-gold" /> : <VolumeX className="w-4 h-4 text-gold" />}
@@ -367,11 +369,11 @@ const ChessGame = () => {
       {/* Controls */}
       <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-4">
         <Button onClick={handleNetworkReset} variant="outline" size="sm" className="border-gold text-gold hover:bg-gold/10">
-          <RotateCcw className="w-4 h-4 mr-1" /> جديدة
+          <RotateCcw className="w-4 h-4 mr-1" /> {t("new_game")}
         </Button>
         {!isNetworkMode && (
           <Button onClick={handleUndo} variant="outline" size="sm" className="border-gold text-gold hover:bg-gold/10" disabled={chess.history().length === 0}>
-            <Undo2 className="w-4 h-4 mr-1" /> تراجع
+            <Undo2 className="w-4 h-4 mr-1" /> {t("undo")}
           </Button>
         )}
       </div>
@@ -379,7 +381,7 @@ const ChessGame = () => {
       {/* Promotion Dialog */}
       <Dialog open={!!promoDialog} onOpenChange={() => setPromoDialog(null)}>
         <DialogContent className="wood-texture border-2 border-gold max-w-xs">
-          <DialogHeader><DialogTitle className="text-gold text-center">ترقية البيدق</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-gold text-center">{t("promote_to")}</DialogTitle></DialogHeader>
           <div className="flex justify-center gap-3 sm:gap-4 py-4">
             {PROMO_PIECES.map((p) => (
               <button
@@ -398,52 +400,52 @@ const ChessGame = () => {
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="wood-texture border-2 border-gold max-w-sm">
-          <DialogHeader><DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>إعدادات الشطرنج</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>{t("game_settings")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-foreground text-sm mb-2 block">وضع اللعب</label>
+              <label className="text-foreground text-sm mb-2 block">{t("game_mode")}</label>
               <Select value={mode} onValueChange={(v: Mode) => { setMode(v); resetGame(); }}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="local">لاعبين محليين</SelectItem>
-                  <SelectItem value="ai">ضد الكمبيوتر</SelectItem>
-                  <SelectItem value="network">عبر الشبكة 📶</SelectItem>
+                  <SelectItem value="local">{t("local_play")}</SelectItem>
+                  <SelectItem value="ai">{t("vs_ai")}</SelectItem>
+                  <SelectItem value="network">{t("online")} 📶</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {mode === "ai" && (
               <div>
-                <label className="text-foreground text-sm mb-2 block">مستوى الصعوبة</label>
+              <label className="text-foreground text-sm mb-2 block">{t("difficulty")}</label>
                 <Select value={difficulty} onValueChange={(v: Difficulty) => { setDifficulty(v); resetGame(); }}>
                   <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="easy">سهل</SelectItem>
-                    <SelectItem value="medium">متوسط</SelectItem>
-                    <SelectItem value="hard">صعب</SelectItem>
+                    <SelectItem value="easy">{t("easy")}</SelectItem>
+                    <SelectItem value="medium">{t("medium")}</SelectItem>
+                    <SelectItem value="hard">{t("hard")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <label className="text-foreground text-sm mb-2 block">نمط الرقعة</label>
+              <label className="text-foreground text-sm mb-2 block">{t("board_theme")}</label>
               <Select value={theme} onValueChange={(v: BoardTheme) => setTheme(v)}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(THEMES).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.name}</SelectItem>
+                    <SelectItem key={k} value={k}>{t(v.nameKey)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-foreground text-sm mb-2 block">شكل القطع</label>
+              <label className="text-foreground text-sm mb-2 block">{t("piece_theme")}</label>
               <Select value={pieceTheme} onValueChange={(v: PieceTheme) => setPieceTheme(v)}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="classic">♔ كلاسيكي</SelectItem>
-                  <SelectItem value="neo">✦ حديث</SelectItem>
-                  <SelectItem value="staunton">♚ ستاونتن</SelectItem>
-                  <SelectItem value="minimal">Aa بسيط</SelectItem>
+                  <SelectItem value="classic">♔ {t("piece_classic")}</SelectItem>
+                  <SelectItem value="neo">✦ {t("piece_neo")}</SelectItem>
+                  <SelectItem value="staunton">♚ {t("piece_staunton")}</SelectItem>
+                  <SelectItem value="minimal">Aa {t("piece_minimal")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
