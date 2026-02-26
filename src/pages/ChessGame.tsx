@@ -19,7 +19,7 @@ type Difficulty = "easy" | "medium" | "hard";
 type BoardTheme = "wood" | "marble" | "plain" | "emerald";
 type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
-const THEMES: Record<BoardTheme, { light: string; dark: string; name: string }> = {
+const THEMES: Record<BoardTheme, { light: string; dark: string; nameKey: string }> = {
   wood: { light: "#d4a76a", dark: "#8b5e3c", nameKey: "theme_wood" },
   marble: { light: "#e8e0d0", dark: "#8a8178", nameKey: "theme_marble" },
   plain: { light: "#f0d9b5", dark: "#b58863", nameKey: "theme_plain" },
