@@ -126,6 +126,7 @@ const DiceFace = ({ value, size = 56, rolling = false }: { value: number; size?:
 };
 
 const LudoGame = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [gameMode, setGameMode] = useState<GameMode>("local");
   const [playerCount, setPlayerCount] = useState(4);
