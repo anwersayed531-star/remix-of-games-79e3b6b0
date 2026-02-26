@@ -25,6 +25,7 @@ const SYMBOL_SETS: Record<string, [string, string]> = {
 };
 
 const XOGame = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [gridSize, setGridSize] = useState(3);
   const [symbolSet, setSymbolSet] = useState("classic");
@@ -186,14 +187,14 @@ const XOGame = () => {
     : "w-[min(14vw,3rem)] h-[min(14vw,3rem)] sm:w-16 sm:h-16 text-lg sm:text-2xl";
 
   const turnLabel = isNetworkMode
-    ? (isMyTurn ? `دورك (${symbols[mySymbol === "X" ? 0 : 1]})` : `دور الخصم (${symbols[mySymbol === "X" ? 1 : 0]})`)
-    : `دور: ${isXTurn ? symbols[0] : symbols[1]} ${mode === "ai" && !isXTurn ? "(يفكر...)" : ""}`;
+    ? (isMyTurn ? `${t("your_turn")} (${symbols[mySymbol === "X" ? 0 : 1]})` : `${t("opponent_turn")} (${symbols[mySymbol === "X" ? 1 : 0]})`)
+    : `${isXTurn ? t("x_turn") : t("o_turn")} ${mode === "ai" && !isXTurn ? `(${t("ai_thinking")})` : ""}`;
 
   return (
     <div className="min-h-[100dvh] wood-texture flex flex-col items-center px-1 py-1 sm:p-4">
       {/* Header */}
       <div className="w-full max-w-lg flex items-center justify-between mb-2 sm:mb-6">
-        <button onClick={() => navigate("/")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
+        <button onClick={() => navigate("/home")} className="p-2 rounded-full bg-secondary/80 hover:bg-secondary border border-gold transition-colors">
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
         </button>
         <h1 className="text-xl sm:text-3xl font-bold text-gold" style={{ fontFamily: "'Cinzel', serif" }}>❌⭕ XO</h1>
@@ -217,9 +218,9 @@ const XOGame = () => {
       {/* Scores with 3D cards */}
       <div className="flex gap-4 sm:gap-6 mb-4 text-sm">
         {[
-          { score: scores.x, label: `${symbols[0]} ${mode === "ai" ? "أنت" : isNetworkMode ? "المضيف" : "لاعب 1"}`, color: "text-destructive" },
-          { score: scores.draw, label: "تعادل", color: "text-muted-foreground" },
-          { score: scores.o, label: `${symbols[1]} ${mode === "ai" ? "الكمبيوتر" : isNetworkMode ? "الضيف" : "لاعب 2"}`, color: "text-primary" },
+          { score: scores.x, label: `${symbols[0]} ${t("x_wins")}`, color: "text-destructive" },
+          { score: scores.draw, label: t("draws"), color: "text-muted-foreground" },
+          { score: scores.o, label: `${symbols[1]} ${t("o_wins")}`, color: "text-primary" },
         ].map((s, i) => (
           <div key={i} className="text-center px-3 py-1.5 rounded-lg bg-card/40 border border-border">
             <span className={`${s.color} font-bold text-lg`}>{s.score}</span>
@@ -233,7 +234,7 @@ const XOGame = () => {
       {winner && (
         <div className="mb-4 text-center animate-celebrate">
           <p className="text-xl sm:text-2xl font-bold text-gold">
-            {winner === "draw" ? "🤝 تعادل!" : `🎉 فاز ${winner === "X" ? symbols[0] : symbols[1]}!`}
+            {winner === "draw" ? `🤝 ${t("draw_result")}` : `🎉 ${winner === "X" ? t("x_wins_result") : t("o_wins_result")}`}
           </p>
         </div>
       )}
@@ -276,7 +277,7 @@ const XOGame = () => {
       </div>
 
       <Button onClick={handleNetworkReset} variant="outline" className="mt-4 sm:mt-6 border-gold text-gold hover:bg-gold/10">
-        <RotateCcw className="w-4 h-4 mr-2" /> جولة جديدة
+        <RotateCcw className="w-4 h-4 mr-2" /> {t("new_game")}
       </Button>
 
       {showTournament && (
@@ -293,29 +294,29 @@ const XOGame = () => {
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="wood-texture border-2 border-gold max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>إعدادات XO</DialogTitle>
+            <DialogTitle className="text-gold text-center" style={{ fontFamily: "'Cinzel', serif" }}>{t("game_settings")} XO</DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-2">
             <div>
-              <label className="text-foreground text-sm mb-2 block">وضع اللعب</label>
+              <label className="text-foreground text-sm mb-2 block">{t("game_mode")}</label>
               <Select value={mode} onValueChange={(v: Mode) => { setMode(v); resetBoard(); }}>
                 <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="local">لاعبين محليين</SelectItem>
-                  <SelectItem value="ai">ضد الكمبيوتر</SelectItem>
-                  <SelectItem value="network">عبر الشبكة 📶</SelectItem>
+                  <SelectItem value="local">{t("local_play")}</SelectItem>
+                  <SelectItem value="ai">{t("vs_ai")}</SelectItem>
+                  <SelectItem value="network">{t("online")} 📶</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {mode === "ai" && (
               <div>
-                <label className="text-foreground text-sm mb-2 block">مستوى الصعوبة</label>
+                <label className="text-foreground text-sm mb-2 block">{t("difficulty")}</label>
                 <Select value={difficulty} onValueChange={(v: Difficulty) => { setDifficulty(v); resetBoard(); }}>
                   <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="easy">سهل</SelectItem>
-                    <SelectItem value="medium">متوسط</SelectItem>
-                    <SelectItem value="hard">صعب</SelectItem>
+                    <SelectItem value="easy">{t("easy")}</SelectItem>
+                    <SelectItem value="medium">{t("medium")}</SelectItem>
+                    <SelectItem value="hard">{t("hard")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -323,7 +324,7 @@ const XOGame = () => {
             {mode !== "network" && (
               <>
                 <div>
-                  <label className="text-foreground text-sm mb-2 block">حجم الشبكة</label>
+                  <label className="text-foreground text-sm mb-2 block">{t("grid_size")}</label>
                   <Select value={String(gridSize)} onValueChange={(v) => setGridSize(Number(v))}>
                     <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -334,7 +335,7 @@ const XOGame = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-foreground text-sm mb-2 block">شكل الرموز</label>
+                  <label className="text-foreground text-sm mb-2 block">{t("symbols")}</label>
                   <Select value={symbolSet} onValueChange={setSymbolSet}>
                     <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
