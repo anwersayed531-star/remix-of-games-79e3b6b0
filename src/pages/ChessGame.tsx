@@ -20,10 +20,10 @@ type BoardTheme = "wood" | "marble" | "plain" | "emerald";
 type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
 const THEMES: Record<BoardTheme, { light: string; dark: string; name: string }> = {
-  wood: { light: "#d4a76a", dark: "#8b5e3c", name: "خشبي" },
-  marble: { light: "#e8e0d0", dark: "#8a8178", name: "رخامي" },
-  plain: { light: "#f0d9b5", dark: "#b58863", name: "كلاسيكي" },
-  emerald: { light: "#ffffdd", dark: "#6baa58", name: "زمردي" },
+  wood: { light: "#d4a76a", dark: "#8b5e3c", nameKey: "theme_wood" },
+  marble: { light: "#e8e0d0", dark: "#8a8178", nameKey: "theme_marble" },
+  plain: { light: "#f0d9b5", dark: "#b58863", nameKey: "theme_plain" },
+  emerald: { light: "#ffffdd", dark: "#6baa58", nameKey: "theme_emerald" },
 };
 
 // More realistic-looking piece sets using distinct Unicode/emoji combinations
@@ -99,6 +99,7 @@ const PIECE_STYLES: Record<PieceTheme, (color: "w" | "b") => React.CSSProperties
 
 const PROMO_PIECES = ["q", "r", "b", "n"] as const;
 
+  const { t } = useLanguage();
 const ChessGame = () => {
   const navigate = useNavigate();
   const chessRef = useRef(new Chess());
