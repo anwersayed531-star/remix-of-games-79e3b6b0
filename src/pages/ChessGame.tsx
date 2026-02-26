@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Chess } from "chess.js";
 import { ArrowLeft, RotateCcw, Settings2, Undo2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
