@@ -6,7 +6,7 @@ interface QRCodeDisplayProps {
   label?: string;
 }
 
-const QRCodeDisplay = ({ value, size = 220, label }: QRCodeDisplayProps) => {
+const QRCodeDisplay = ({ value, size = 260, label }: QRCodeDisplayProps) => {
   if (!value) return null;
 
   return (
@@ -14,11 +14,11 @@ const QRCodeDisplay = ({ value, size = 220, label }: QRCodeDisplayProps) => {
       {label && (
         <p className="text-sm text-muted-foreground text-center">{label}</p>
       )}
-      <div className="bg-white p-3 rounded-xl shadow-lg">
+      <div className="bg-white p-4 rounded-xl shadow-lg">
         <QRCodeSVG
           value={value}
           size={size}
-          level="L"
+          level="M"
           bgColor="#ffffff"
           fgColor="#1a0f0a"
         />

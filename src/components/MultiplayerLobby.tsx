@@ -183,7 +183,7 @@ const MultiplayerLobby = ({
               className="w-full h-14 text-lg gold-gradient text-background font-bold rounded-xl"
             >
               <QrCode className="w-5 h-5 ml-2" />
-              إنشاء غرفة (حتى 40 لاعب)
+              إنشاء غرفة
             </Button>
 
             <div className="relative flex items-center justify-center">
