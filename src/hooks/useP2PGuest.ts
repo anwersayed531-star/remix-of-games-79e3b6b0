@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { compressSDP, decompressSDP, waitForICE, RTC_CONFIG_LOCAL } from "@/lib/sdpUtils";
 
 export type GuestStatus = "idle" | "connecting" | "waiting" | "connected" | "failed";
 
@@ -11,41 +12,6 @@ interface UseP2PGuestReturn {
   onMessage: (handler: (data: any) => void) => void;
   disconnect: () => void;
   registerName: (name: string) => void;
-}
-
-const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
-function compressSDP(sdp: RTCSessionDescriptionInit): string {
-  return btoa(JSON.stringify(sdp))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function decompressSDP(code: string): RTCSessionDescriptionInit {
-  const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  return JSON.parse(atob(padded));
-}
-
-function waitForICE(pc: RTCPeerConnection): Promise<void> {
-  return new Promise((resolve) => {
-    if (pc.iceGatheringState === "complete") { resolve(); return; }
-    const check = () => {
-      if (pc.iceGatheringState === "complete") {
-        pc.removeEventListener("icegatheringstatechange", check);
-        resolve();
-      }
-    };
-    pc.addEventListener("icegatheringstatechange", check);
-    setTimeout(resolve, 10000);
-  });
 }
 
 export function useP2PGuest(): UseP2PGuestReturn {
@@ -70,7 +36,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
       setError(null);
       cleanup();
 
-      const pc = new RTCPeerConnection(RTC_CONFIG);
+      const pc = new RTCPeerConnection(RTC_CONFIG_LOCAL);
       pcRef.current = pc;
 
       pc.onconnectionstatechange = () => {
@@ -89,10 +55,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
         const channel = e.channel;
         dcRef.current = channel;
         channel.onopen = () => setStatus("connected");
-        channel.onclose = () => {
-          setStatus("idle");
-          cleanup();
-        };
+        channel.onclose = () => { setStatus("idle"); cleanup(); };
         channel.onmessage = (ev) => {
           try {
             const data = JSON.parse(ev.data);
@@ -106,7 +69,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      await waitForICE(pc);
+      await waitForICE(pc, 5000);
 
       const fullAnswer = pc.localDescription!;
       setAnswerCode(compressSDP(fullAnswer));
@@ -118,9 +81,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
   }, [cleanup]);
 
   const sendMessage = useCallback((data: any) => {
-    if (dcRef.current?.readyState === "open") {
-      dcRef.current.send(JSON.stringify(data));
-    }
+    if (dcRef.current?.readyState === "open") dcRef.current.send(JSON.stringify(data));
   }, []);
 
   const onMessage = useCallback((handler: (data: any) => void) => {
@@ -138,18 +99,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
     setError(null);
   }, [cleanup]);
 
-  useEffect(() => {
-    return () => cleanup();
-  }, [cleanup]);
+  useEffect(() => { return () => cleanup(); }, [cleanup]);
 
-  return {
-    status,
-    answerCode,
-    error,
-    joinRoom,
-    sendMessage,
-    onMessage,
-    disconnect,
-    registerName,
-  };
+  return { status, answerCode, error, joinRoom, sendMessage, onMessage, disconnect, registerName };
 }

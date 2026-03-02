@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Camera, CameraOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const QRCodeScanner = ({ onScan, onError, scanning = true }: QRCodeScannerProps)
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [needsPermission, setNeedsPermission] = useState(true);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<string>("qr-reader-" + Math.random().toString(36).slice(2));
   const scannedRef = useRef(false);
@@ -34,9 +35,12 @@ const QRCodeScanner = ({ onScan, onError, scanning = true }: QRCodeScannerProps)
     setErrorMsg(null);
 
     try {
-      // Request camera permission
-      await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      // Request camera permission - called from user click handler
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      // Stop the stream immediately, html5-qrcode will open its own
+      stream.getTracks().forEach(t => t.stop());
       setHasPermission(true);
+      setNeedsPermission(false);
 
       const scanner = new Html5Qrcode(containerRef.current);
       scannerRef.current = scanner;
@@ -44,8 +48,8 @@ const QRCodeScanner = ({ onScan, onError, scanning = true }: QRCodeScannerProps)
       await scanner.start(
         { facingMode: "environment" },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 5,
+          qrbox: { width: 280, height: 280 },
           aspectRatio: 1,
         },
         (decodedText) => {
@@ -74,19 +78,38 @@ const QRCodeScanner = ({ onScan, onError, scanning = true }: QRCodeScannerProps)
   }, [onScan, onError, stopScanner]);
 
   useEffect(() => {
-    if (scanning) {
-      scannedRef.current = false;
-      startScanner();
-    }
-    return () => {
+    if (!scanning) {
       stopScanner();
-    };
-  }, [scanning, startScanner, stopScanner]);
+      scannedRef.current = false;
+      setNeedsPermission(true);
+    }
+    return () => { stopScanner(); };
+  }, [scanning, stopScanner]);
 
   if (!scanning) return null;
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
+      {/* Show "Open Camera" button first - triggers permission from user gesture */}
+      {needsPermission && !isStarting && !errorMsg && (
+        <div className="flex flex-col items-center gap-3 py-6">
+          <Camera className="w-12 h-12 text-accent" />
+          <p className="text-sm text-muted-foreground text-center">
+            اضغط لفتح الكاميرا ومسح رمز QR
+          </p>
+          <Button
+            onClick={() => {
+              scannedRef.current = false;
+              startScanner();
+            }}
+            className="gold-gradient text-background font-bold rounded-xl px-6 py-3"
+          >
+            <Camera className="w-5 h-5 ml-2" />
+            فتح الكاميرا
+          </Button>
+        </div>
+      )}
+
       {isStarting && (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -116,10 +139,10 @@ const QRCodeScanner = ({ onScan, onError, scanning = true }: QRCodeScannerProps)
       <div
         id={containerRef.current}
         className="w-full max-w-[300px] aspect-square rounded-xl overflow-hidden bg-black/20"
-        style={{ minHeight: hasPermission === false ? 0 : 280 }}
+        style={{ minHeight: needsPermission || hasPermission === false ? 0 : 280 }}
       />
 
-      {hasPermission && !errorMsg && (
+      {hasPermission && !errorMsg && !needsPermission && (
         <p className="text-xs text-muted-foreground text-center">
           وجّه الكاميرا نحو رمز QR على شاشة المضيف
         </p>

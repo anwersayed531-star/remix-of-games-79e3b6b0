@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { compressSDP, decompressSDP, waitForICE, RTC_CONFIG_LOCAL } from "@/lib/sdpUtils";
 
 export type ConnectionStatus = "idle" | "creating" | "waiting" | "connecting" | "connected" | "failed";
 export type Role = "host" | "guest" | null;
@@ -16,29 +17,6 @@ interface UseP2PConnectionReturn {
   disconnect: () => void;
 }
 
-// Compress SDP to shorter code
-function compressSDP(sdp: RTCSessionDescriptionInit): string {
-  return btoa(JSON.stringify(sdp))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function decompressSDP(code: string): RTCSessionDescriptionInit {
-  const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  return JSON.parse(atob(padded));
-}
-
-const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [
-    // STUN as fallback only - local network works without it
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
 export function useP2PConnection(): UseP2PConnectionReturn {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [role, setRole] = useState<Role>(null);
@@ -48,51 +26,31 @@ export function useP2PConnection(): UseP2PConnectionReturn {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const messageHandlerRef = useRef<((data: any) => void) | null>(null);
-  const iceCandidatesRef = useRef<RTCIceCandidate[]>([]);
 
   const cleanup = useCallback(() => {
     dcRef.current?.close();
     pcRef.current?.close();
     dcRef.current = null;
     pcRef.current = null;
-    iceCandidatesRef.current = [];
   }, []);
 
   const setupDataChannel = useCallback((channel: RTCDataChannel) => {
     dcRef.current = channel;
     channel.onopen = () => setStatus("connected");
-    channel.onclose = () => {
-      setStatus("idle");
-      cleanup();
-    };
+    channel.onclose = () => { setStatus("idle"); cleanup(); };
     channel.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        messageHandlerRef.current?.(data);
-      } catch {
-        // ignore non-JSON messages
-      }
+      try { messageHandlerRef.current?.(JSON.parse(e.data)); } catch {}
     };
   }, [cleanup]);
 
   const createPC = useCallback(() => {
     cleanup();
-    const pc = new RTCPeerConnection(RTC_CONFIG);
+    const pc = new RTCPeerConnection(RTC_CONFIG_LOCAL);
     pcRef.current = pc;
 
-    pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        iceCandidatesRef.current.push(e.candidate);
-      }
-    };
-
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") {
-        // Auto-retry ICE restart instead of immediately failing
-        pc.restartIce();
-      }
+      if (pc.connectionState === "failed") pc.restartIce();
       if (pc.connectionState === "disconnected") {
-        // Give it a chance to reconnect before failing
         setTimeout(() => {
           if (pc.connectionState === "disconnected") {
             setStatus("failed");
@@ -105,54 +63,32 @@ export function useP2PConnection(): UseP2PConnectionReturn {
     return pc;
   }, [cleanup]);
 
-  // Wait for ICE gathering to complete
-  const waitForICE = useCallback((pc: RTCPeerConnection): Promise<void> => {
-    return new Promise((resolve) => {
-      if (pc.iceGatheringState === "complete") {
-        resolve();
-        return;
-      }
-      const check = () => {
-        if (pc.iceGatheringState === "complete") {
-          pc.removeEventListener("icegatheringstatechange", check);
-          resolve();
-        }
-      };
-      pc.addEventListener("icegatheringstatechange", check);
-      // Timeout after 10 seconds for local network
-      setTimeout(resolve, 10000);
-    });
-  }, []);
-
   const createRoom = useCallback(async () => {
     try {
       setStatus("creating");
       setError(null);
       const pc = createPC();
-
       const channel = pc.createDataChannel("game", { ordered: true });
       setupDataChannel(channel);
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      await waitForICE(pc);
+      await waitForICE(pc, 5000);
 
-      const fullOffer = pc.localDescription!;
-      setLocalCode(compressSDP(fullOffer));
+      setLocalCode(compressSDP(pc.localDescription!));
       setRole("host");
       setStatus("waiting");
-    } catch (err) {
+    } catch {
       setStatus("failed");
       setError("فشل في إنشاء الغرفة");
     }
-  }, [createPC, setupDataChannel, waitForICE]);
+  }, [createPC, setupDataChannel]);
 
   const joinRoom = useCallback(async (offerCode: string) => {
     try {
       setStatus("connecting");
       setError(null);
       const pc = createPC();
-
       pc.ondatachannel = (e) => setupDataChannel(e.channel);
 
       const offer = decompressSDP(offerCode.trim());
@@ -160,36 +96,31 @@ export function useP2PConnection(): UseP2PConnectionReturn {
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      await waitForICE(pc);
+      await waitForICE(pc, 5000);
 
-      const fullAnswer = pc.localDescription!;
-      setLocalCode(compressSDP(fullAnswer));
+      setLocalCode(compressSDP(pc.localDescription!));
       setRole("guest");
       setStatus("waiting");
-    } catch (err) {
+    } catch {
       setStatus("failed");
       setError("رمز الغرفة غير صالح");
     }
-  }, [createPC, setupDataChannel, waitForICE]);
+  }, [createPC, setupDataChannel]);
 
   const completeConnection = useCallback(async (answerCode: string) => {
     try {
       setStatus("connecting");
       const pc = pcRef.current;
       if (!pc) throw new Error("No connection");
-
-      const answer = decompressSDP(answerCode.trim());
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    } catch (err) {
+      await pc.setRemoteDescription(new RTCSessionDescription(decompressSDP(answerCode.trim())));
+    } catch {
       setStatus("failed");
       setError("فشل في إتمام الاتصال");
     }
   }, []);
 
   const sendMessage = useCallback((data: any) => {
-    if (dcRef.current?.readyState === "open") {
-      dcRef.current.send(JSON.stringify(data));
-    }
+    if (dcRef.current?.readyState === "open") dcRef.current.send(JSON.stringify(data));
   }, []);
 
   const onMessage = useCallback((handler: (data: any) => void) => {
@@ -204,20 +135,7 @@ export function useP2PConnection(): UseP2PConnectionReturn {
     setError(null);
   }, [cleanup]);
 
-  useEffect(() => {
-    return () => cleanup();
-  }, [cleanup]);
+  useEffect(() => { return () => cleanup(); }, [cleanup]);
 
-  return {
-    status,
-    role,
-    localCode,
-    error,
-    createRoom,
-    joinRoom,
-    completeConnection,
-    sendMessage,
-    onMessage,
-    disconnect,
-  };
+  return { status, role, localCode, error, createRoom, joinRoom, completeConnection, sendMessage, onMessage, disconnect };
 }

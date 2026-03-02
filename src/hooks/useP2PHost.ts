@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { compressSDP, decompressSDP, waitForICE, RTC_CONFIG_LOCAL } from "@/lib/sdpUtils";
 
 export type HostStatus = "idle" | "creating" | "waiting" | "connected";
 
@@ -27,41 +28,6 @@ interface UseP2PHostReturn {
   peerCount: number;
 }
 
-const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
-function compressSDP(sdp: RTCSessionDescriptionInit): string {
-  return btoa(JSON.stringify(sdp))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function decompressSDP(code: string): RTCSessionDescriptionInit {
-  const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  return JSON.parse(atob(padded));
-}
-
-function waitForICE(pc: RTCPeerConnection): Promise<void> {
-  return new Promise((resolve) => {
-    if (pc.iceGatheringState === "complete") { resolve(); return; }
-    const check = () => {
-      if (pc.iceGatheringState === "complete") {
-        pc.removeEventListener("icegatheringstatechange", check);
-        resolve();
-      }
-    };
-    pc.addEventListener("icegatheringstatechange", check);
-    setTimeout(resolve, 10000);
-  });
-}
-
 let peerIdCounter = 0;
 
 export function useP2PHost(): UseP2PHostReturn {
@@ -87,12 +53,10 @@ export function useP2PHost(): UseP2PHostReturn {
   }, []);
 
   const createPeerConnection = useCallback((peerId: string): RTCPeerConnection => {
-    const pc = new RTCPeerConnection(RTC_CONFIG);
+    const pc = new RTCPeerConnection(RTC_CONFIG_LOCAL);
     
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") {
-        pc.restartIce();
-      }
+      if (pc.connectionState === "failed") pc.restartIce();
       if (pc.connectionState === "disconnected") {
         setTimeout(() => {
           if (pc.connectionState === "disconnected") {
@@ -136,7 +100,6 @@ export function useP2PHost(): UseP2PHostReturn {
     channel.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        // Handle name registration
         if (data.type === "__register") {
           const peer = peersRef.current.get(peerId);
           if (peer) {
@@ -150,19 +113,6 @@ export function useP2PHost(): UseP2PHostReturn {
     };
   }, [updatePeerList]);
 
-  const createRoom = useCallback(async () => {
-    try {
-      setStatus("creating");
-      setError(null);
-      // Generate first offer
-      await generateOffer();
-      setStatus("waiting");
-    } catch {
-      setStatus("idle");
-      setError("فشل في إنشاء الغرفة");
-    }
-  }, []);
-
   const generateOffer = useCallback(async () => {
     const peerId = `p${++peerIdCounter}`;
     const pc = createPeerConnection(peerId);
@@ -170,10 +120,7 @@ export function useP2PHost(): UseP2PHostReturn {
     const channel = pc.createDataChannel("game", { ordered: true });
     
     const peerConn: PeerConnection = {
-      id: peerId,
-      pc,
-      dc: null,
-      connected: false,
+      id: peerId, pc, dc: null, connected: false,
       name: `لاعب ${peerIdCounter}`,
     };
     peersRef.current.set(peerId, peerConn);
@@ -181,7 +128,7 @@ export function useP2PHost(): UseP2PHostReturn {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await waitForICE(pc);
+    await waitForICE(pc, 5000);
 
     const fullOffer = pc.localDescription!;
     setOfferCode(compressSDP(fullOffer));
@@ -189,6 +136,18 @@ export function useP2PHost(): UseP2PHostReturn {
     pendingIdRef.current = peerId;
     updatePeerList();
   }, [createPeerConnection, setupDataChannel, updatePeerList]);
+
+  const createRoom = useCallback(async () => {
+    try {
+      setStatus("creating");
+      setError(null);
+      await generateOffer();
+      setStatus("waiting");
+    } catch {
+      setStatus("idle");
+      setError("فشل في إنشاء الغرفة");
+    }
+  }, [generateOffer]);
 
   const generateOfferForNext = useCallback(async () => {
     try {
@@ -203,7 +162,6 @@ export function useP2PHost(): UseP2PHostReturn {
     try {
       const pc = pendingPCRef.current;
       if (!pc) throw new Error("No pending connection");
-
       const answer = decompressSDP(answerCode.trim());
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
       pendingPCRef.current = null;
@@ -215,27 +173,21 @@ export function useP2PHost(): UseP2PHostReturn {
   const broadcast = useCallback((data: any) => {
     const msg = JSON.stringify(data);
     for (const peer of peersRef.current.values()) {
-      if (peer.dc?.readyState === "open") {
-        peer.dc.send(msg);
-      }
+      if (peer.dc?.readyState === "open") peer.dc.send(msg);
     }
   }, []);
 
   const sendTo = useCallback((peerId: string, data: any) => {
     const peer = peersRef.current.get(peerId);
-    if (peer?.dc?.readyState === "open") {
-      peer.dc.send(JSON.stringify(data));
-    }
+    if (peer?.dc?.readyState === "open") peer.dc.send(JSON.stringify(data));
   }, []);
 
   const onMessage = useCallback((handler: (peerId: string, data: any) => void) => {
     messageHandlerRef.current = handler;
   }, []);
-
   const onPeerJoin = useCallback((handler: (peerId: string) => void) => {
     joinHandlerRef.current = handler;
   }, []);
-
   const onPeerLeave = useCallback((handler: (peerId: string) => void) => {
     leaveHandlerRef.current = handler;
   }, []);
@@ -264,19 +216,10 @@ export function useP2PHost(): UseP2PHostReturn {
   }, []);
 
   return {
-    status,
-    peers: peerList,
-    offerCode,
-    error,
-    createRoom,
-    generateOfferForNext: generateOffer,
-    handleAnswer,
-    broadcast,
-    sendTo,
-    onMessage,
-    onPeerJoin,
-    onPeerLeave,
-    disconnect,
+    status, peers: peerList, offerCode, error,
+    createRoom, generateOfferForNext: generateOffer,
+    handleAnswer, broadcast, sendTo, onMessage,
+    onPeerJoin, onPeerLeave, disconnect,
     peerCount: peerList.filter(p => p.connected).length,
   };
 }
