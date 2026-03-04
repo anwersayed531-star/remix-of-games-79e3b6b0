@@ -1,5 +1,5 @@
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
-import MultiplayerLobby from "@/components/MultiplayerLobby";
+import NetworkLobby from "@/components/NetworkLobby";
 import { useNavigate } from "react-router-dom";
 
 const LobbyTest = () => {
@@ -28,7 +28,7 @@ const LobbyTest = () => {
   }
 
   return (
-    <MultiplayerLobby
+    <NetworkLobby
       status={mp.status}
       role={mp.role}
       localCode={mp.localCode}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Trophy, Users, Play, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import MultiplayerLobby from "@/components/MultiplayerLobby";
+import NetworkLobby from "@/components/NetworkLobby";
 import TournamentManager from "@/components/TournamentManager";
 import TournamentBracket from "@/components/TournamentBracket";
 import MatchSidebar from "@/components/MatchSidebar";
@@ -68,7 +68,7 @@ const TournamentPage = () => {
   // Show lobby if not connected
   if (!isConnected) {
     return (
-      <MultiplayerLobby
+      <NetworkLobby
         status={mp.status}
         role={mp.role}
         localCode={mp.localCode}
