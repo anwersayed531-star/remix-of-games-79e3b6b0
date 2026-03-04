@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { findBestMove } from "@/lib/chessAI";
-import MultiplayerLobby from "@/components/MultiplayerLobby";
+import NetworkLobby from "@/components/NetworkLobby";
 import TournamentManager from "@/components/TournamentManager";
 import MatchSidebar from "@/components/MatchSidebar";
 import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
@@ -262,7 +262,7 @@ const ChessGame = () => {
   // Show lobby
   if (mode === "network" && mp.status !== "connected") {
     return (
-      <MultiplayerLobby
+      <NetworkLobby
         status={mp.status} role={mp.role} localCode={mp.localCode}
         answerCode={mp.answerCode} error={mp.error}
         onCreateRoom={mp.createRoom} onJoinRoom={mp.joinRoom}
