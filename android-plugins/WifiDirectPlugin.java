@@ -101,7 +101,7 @@ public class WifiDirectPlugin extends Plugin {
 
     // ─── Permission helpers ───────────────────────────────────────
 
-    private boolean hasRequiredPermissions() {
+    private boolean hasAllRequiredPermissions() {
         // Check location permission (required on all Android versions for WiFi Direct)
         if (getPermissionState("location") != PermissionState.GRANTED) {
             return false;
@@ -136,7 +136,7 @@ public class WifiDirectPlugin extends Plugin {
         }
 
         // This was triggered from createGroup/discover — continue or reject
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             call.reject("الأذونات المطلوبة غير ممنوحة. يرجى السماح بأذونات الموقع والأجهزة القريبة.");
             notifyStatus("failed");
             pendingAction = null;
@@ -159,7 +159,7 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void createGroup(PluginCall call) {
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             pendingCall = call;
             pendingAction = "createGroup";
             requestAllPermissions(call, "handlePermissionResult");
@@ -188,7 +188,7 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void discover(PluginCall call) {
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             pendingCall = call;
             pendingAction = "discover";
             requestAllPermissions(call, "handlePermissionResult");
