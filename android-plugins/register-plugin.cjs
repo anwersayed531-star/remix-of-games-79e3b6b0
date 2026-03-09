@@ -76,6 +76,7 @@ const permissions = [
   'android.permission.NEARBY_WIFI_DEVICES',
   'android.permission.INTERNET',
   'android.permission.ACCESS_NETWORK_STATE',
+  'android.permission.CAMERA',
 ];
 
 let modified = false;
