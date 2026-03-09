@@ -49,6 +49,19 @@ jobs:
       - name: Register WiFi Direct Plugin
         run: node android-plugins/register-plugin.cjs
 
+      - name: Set App Icon
+        run: |
+          for dir in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp public/app-icon.png android/app/src/main/res/mipmap-${dir}/ic_launcher.png
+            cp public/app-icon.png android/app/src/main/res/mipmap-${dir}/ic_launcher_round.png
+            cp public/app-icon.png android/app/src/main/res/mipmap-${dir}/ic_launcher_foreground.png 2>/dev/null || true
+          done
+
+      - name: Set Splash Screen
+        run: |
+          mkdir -p android/app/src/main/res/drawable
+          cp public/app-icon.png android/app/src/main/res/drawable/splash.png
+
       - name: Sync Capacitor
         run: npx cap sync android
 
