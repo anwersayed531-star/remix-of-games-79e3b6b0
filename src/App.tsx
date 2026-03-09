@@ -11,6 +11,7 @@ import ChessGame from "./pages/ChessGame";
 import LudoGame from "./pages/LudoGame";
 import LobbyTest from "./pages/LobbyTest";
 import TournamentPage from "./pages/TournamentPage";
+import LocalTournament from "./pages/LocalTournament";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
