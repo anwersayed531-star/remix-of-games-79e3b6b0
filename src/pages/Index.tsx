@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Settings, Dice5, Grid3X3, Crown, Trophy, Globe } from "lucide-react";
+import { Settings, Dice5, Grid3X3, Crown, Trophy, Globe, Swords } from "lucide-react";
 import { useState } from "react";
 import SettingsDialog from "@/components/SettingsDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -45,6 +45,15 @@ const Index = () => {
       path: "/tournament",
       gradient: "from-accent/50 to-destructive/30",
       borderColor: "border-accent/30",
+    },
+    {
+      id: "local-tournament",
+      title: "بطولة محلية",
+      subtitle: "أوفلاين",
+      icon: Swords,
+      path: "/local-tournament",
+      gradient: "from-primary/50 to-accent/30",
+      borderColor: "border-primary/30",
     },
   ];
 
