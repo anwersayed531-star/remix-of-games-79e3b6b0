@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Settings, Dice5, Grid3X3, Crown, Trophy, Globe } from "lucide-react";
+import { Settings, Dice5, Grid3X3, Crown, Trophy, Globe, Swords } from "lucide-react";
 import { useState } from "react";
 import SettingsDialog from "@/components/SettingsDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
