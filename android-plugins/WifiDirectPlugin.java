@@ -188,7 +188,7 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void discover(PluginCall call) {
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             pendingCall = call;
             pendingAction = "discover";
             requestAllPermissions(call, "handlePermissionResult");
