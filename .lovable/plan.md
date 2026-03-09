@@ -1,52 +1,43 @@
 
 
-# إصلاح مشكلة الأذونات في WiFi Direct
+# خطة إصلاح توافق لوحة الشطرنج مع جميع أحجام الشاشات
 
-## المشكلة الأساسية
-البلاجن يُعلن عن الأذونات في الكود (`@Permission`) لكن **لا يطلبها من المستخدم أبداً في وقت التشغيل (Runtime)**. على أندرويد 6+ الأذونات الخطيرة (الموقع، الأجهزة القريبة) يجب طلبها من المستخدم بنافذة منبثقة قبل استخدامها.
+## المشكلة
+على الشاشات الصغيرة (320px وأقل)، القطع تُقطع من الأعلى والأسفل بسبب:
+1. خاصية `overflow-hidden` على حاوية اللوحة تقص القطع والظلال
+2. أحجام خطوط القطع (خصوصاً ستاونتن `8vw`) كبيرة نسبياً لحجم المربعات
+3. القطع لا تتناسب تلقائياً مع حجم المربع الفعلي
 
-## التغييرات المطلوبة
+## الحل
 
-### 1. إضافة دوال طلب الأذونات في البلاجن الجافا (`WifiDirectPlugin.java`)
-- إضافة method `checkPermissions` و `requestPermissions` باستخدام نظام Capacitor المدمج
-- في دوال `createGroup` و `discover` — التحقق من الأذونات أولاً وطلبها إن لم تكن ممنوحة قبل تنفيذ أي عملية WiFi Direct
-- إضافة `@PermissionCallback` لمعالجة نتيجة طلب الإذن وإكمال العملية أو رفضها
+### 1. تعديل أحجام خطوط القطع
+استخدام وحدات نسبية للمربع بدلاً من `vw` الثابتة لضمان أن القطعة لا تتجاوز مربعها أبداً:
 
-### 2. تحديث TypeScript Plugin interface (`WifiDirectPlugin.ts`)
-- إضافة `checkPermissions()` و `requestPermissions()` للواجهة
+| الثيم | الحالي | الجديد |
+|-------|--------|--------|
+| classic | `min(7vw, 36px)` | `min(5.5vw, 36px)` |
+| neo | `min(7vw, 36px)` | `min(5.5vw, 36px)` |
+| staunton | `min(8vw, 40px)` | `min(6vw, 38px)` |
+| minimal | `min(5vw, 26px)` | `min(4.5vw, 26px)` |
 
-### 3. تحديث `useWifiDirect.ts` لطلب الأذونات تلقائياً
-- قبل `createGroup` أو `discover`، استدعاء `requestPermissions()` أولاً
-- عرض رسالة خطأ واضحة بالعربي إذا رفض المستخدم الأذونات
+### 2. إضافة `overflow-visible` للمربعات مع الحفاظ على `overflow-hidden` للحاوية الخارجية فقط لمنع التمدد الأفقي
+- إزالة `overflow-hidden` من الحاوية `board-3d`
+- إضافة `overflow-hidden` فقط على مستوى الـ grid container
 
-### 4. إضافة إذن `ACCESS_COARSE_LOCATION` في سكريبت البناء (`register-plugin.cjs`)
-- إضافته لقائمة الأذونات في `AndroidManifest.xml` (مطلوب على بعض إصدارات أندرويد)
+### 3. تحسين حجم اللوحة نسبة للشاشة
+تغيير حساب عرض اللوحة ليأخذ بالاعتبار حدود الشاشة بشكل أفضل:
+- من: `min(calc(100vw - 8px), 420px)`  
+- إلى: `min(calc(100vw - 16px), 420px)` مع padding إضافي
 
-## التفاصيل التقنية
+### 4. ضمان القطع داخل المربعات
+إضافة `line-height: 1` و `overflow: hidden` على عنصر القطعة `<span>` نفسه لمنع أي تجاوز عمودي.
 
-في الجافا، الدوال الجديدة ستستخدم نظام Capacitor المدمج:
-```java
-@PluginMethod
-public void checkPermissions(PluginCall call) {
-    // يستخدم super.checkPermissions(call) المدمج في Capacitor
-}
+---
 
-@PluginMethod  
-public void requestPermissions(PluginCall call) {
-    // يستخدم super.requestAllPermissions(call, "permissionCallback")
-}
+### التفاصيل التقنية
 
-@PermissionCallback
-private void permissionCallback(PluginCall call) {
-    // يتحقق من النتيجة ويكمل أو يرفض
-}
-```
+**ملف واحد يتعدل:** `src/pages/ChessGame.tsx`
 
-في TypeScript قبل كل عملية:
-```typescript
-const createGroup = async () => {
-    await WifiDirect.requestPermissions(); // يطلب الإذن أولاً
-    await WifiDirect.createGroup();
-};
-```
-
+- تعديل كائن `PIECE_STYLES` (أسطر 53-92): تصغير أحجام الخطوط
+- تعديل حاوية اللوحة (سطر 313-314): تحسين التحجيم والـ overflow
+- تعديل عنصر القطعة (سطر 350-353): إضافة `lineHeight: 1` وضبط الحجم داخل المربع
