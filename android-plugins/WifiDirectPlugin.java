@@ -101,7 +101,7 @@ public class WifiDirectPlugin extends Plugin {
 
     // ─── Permission helpers ───────────────────────────────────────
 
-    private boolean hasRequiredPermissions() {
+    private boolean hasAllRequiredPermissions() {
         // Check location permission (required on all Android versions for WiFi Direct)
         if (getPermissionState("location") != PermissionState.GRANTED) {
             return false;
