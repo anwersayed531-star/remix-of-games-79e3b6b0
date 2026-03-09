@@ -12,6 +12,7 @@ import android.util.Log;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -28,7 +29,10 @@ import java.util.concurrent.Executors;
 @CapacitorPlugin(
     name = "WifiDirect",
     permissions = {
-        @Permission(alias = "location", strings = { Manifest.permission.ACCESS_FINE_LOCATION }),
+        @Permission(alias = "location", strings = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        }),
         @Permission(alias = "nearby", strings = { "android.permission.NEARBY_WIFI_DEVICES" })
     }
 )
@@ -49,6 +53,10 @@ public class WifiDirectPlugin extends Plugin {
 
     private PrintWriter writer;
     private final ExecutorService executor = Executors.newCachedThreadPool();
+
+    // Pending call saved while waiting for permission result
+    private PluginCall pendingCall;
+    private String pendingAction; // "createGroup" or "discover"
 
     @Override
     public void load() {
@@ -91,8 +99,76 @@ public class WifiDirectPlugin extends Plugin {
         getContext().registerReceiver(receiver, intentFilter);
     }
 
+    // ─── Permission helpers ───────────────────────────────────────
+
+    private boolean hasRequiredPermissions() {
+        // Check location permission (required on all Android versions for WiFi Direct)
+        if (getPermissionState("location") != PermissionState.GRANTED) {
+            return false;
+        }
+        // Check nearby permission (required on Android 13+)
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (getPermissionState("nearby") != PermissionState.GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @PluginMethod
+    public void checkPermissions(PluginCall call) {
+        super.checkPermissions(call);
+    }
+
+    @PluginMethod
+    public void requestPermissions(PluginCall call) {
+        super.requestAllPermissions(call, "handlePermissionResult");
+    }
+
+    @PermissionCallback
+    private void handlePermissionResult(PluginCall call) {
+        if (call == null) return;
+
+        // If this was a standalone requestPermissions() call, just return the state
+        if (pendingAction == null) {
+            super.checkPermissions(call);
+            return;
+        }
+
+        // This was triggered from createGroup/discover — continue or reject
+        if (!hasRequiredPermissions()) {
+            call.reject("الأذونات المطلوبة غير ممنوحة. يرجى السماح بأذونات الموقع والأجهزة القريبة.");
+            notifyStatus("failed");
+            pendingAction = null;
+            pendingCall = null;
+            return;
+        }
+
+        String action = pendingAction;
+        pendingAction = null;
+        pendingCall = null;
+
+        if ("createGroup".equals(action)) {
+            doCreateGroup(call);
+        } else if ("discover".equals(action)) {
+            doDiscover(call);
+        }
+    }
+
+    // ─── WiFi Direct operations ───────────────────────────────────
+
     @PluginMethod
     public void createGroup(PluginCall call) {
+        if (!hasRequiredPermissions()) {
+            pendingCall = call;
+            pendingAction = "createGroup";
+            requestAllPermissions(call, "handlePermissionResult");
+            return;
+        }
+        doCreateGroup(call);
+    }
+
+    private void doCreateGroup(PluginCall call) {
         isHost = true;
         manager.createGroup(channel, new WifiP2pManager.ActionListener() {
             @Override
@@ -112,6 +188,16 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void discover(PluginCall call) {
+        if (!hasRequiredPermissions()) {
+            pendingCall = call;
+            pendingAction = "discover";
+            requestAllPermissions(call, "handlePermissionResult");
+            return;
+        }
+        doDiscover(call);
+    }
+
+    private void doDiscover(PluginCall call) {
         isHost = false;
         manager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
             @Override
@@ -159,7 +245,6 @@ public class WifiDirectPlugin extends Plugin {
         executor.execute(() -> {
             try {
                 if (isHost) {
-                    // Broadcast to all connected clients
                     synchronized (clientSockets) {
                         List<Socket> dead = new ArrayList<>();
                         for (Socket s : clientSockets) {
@@ -209,6 +294,8 @@ public class WifiDirectPlugin extends Plugin {
             }
         });
     }
+
+    // ─── Socket / networking ──────────────────────────────────────
 
     private void startServer() {
         executor.execute(() -> {
@@ -272,7 +359,6 @@ public class WifiDirectPlugin extends Plugin {
                     data.put("from", socket.getInetAddress().getHostAddress());
                     notifyListeners("message", data);
 
-                    // If host, relay to other clients
                     if (isHost) {
                         synchronized (clientSockets) {
                             for (Socket s : clientSockets) {
@@ -292,6 +378,8 @@ public class WifiDirectPlugin extends Plugin {
             }
         });
     }
+
+    // ─── Notification helpers ─────────────────────────────────────
 
     private void notifyStatus(String status) {
         JSObject data = new JSObject();

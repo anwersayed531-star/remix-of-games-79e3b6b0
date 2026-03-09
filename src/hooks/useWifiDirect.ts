@@ -20,6 +20,15 @@ interface UseWifiDirectReturn {
   disconnect: () => Promise<void>;
 }
 
+async function ensurePermissions(): Promise<boolean> {
+  try {
+    const result = await WifiDirect.requestPermissions();
+    return result.location === "granted";
+  } catch {
+    return false;
+  }
+}
+
 export function useWifiDirect(): UseWifiDirectReturn {
   const available = Capacitor.isNativePlatform();
   const [status, setStatus] = useState<WifiDirectStatus>("idle");
@@ -69,6 +78,12 @@ export function useWifiDirect(): UseWifiDirectReturn {
     if (!available) return;
     try {
       setError(null);
+      const granted = await ensurePermissions();
+      if (!granted) {
+        setError("يجب السماح بأذونات الموقع لاستخدام WiFi Direct");
+        setStatus("failed");
+        return;
+      }
       setRole("host");
       setStatus("waiting");
       await WifiDirect.createGroup();
@@ -82,6 +97,12 @@ export function useWifiDirect(): UseWifiDirectReturn {
     if (!available) return;
     try {
       setError(null);
+      const granted = await ensurePermissions();
+      if (!granted) {
+        setError("يجب السماح بأذونات الموقع لاستخدام WiFi Direct");
+        setStatus("failed");
+        return;
+      }
       setRole("guest");
       setStatus("discovering");
       await WifiDirect.discover();

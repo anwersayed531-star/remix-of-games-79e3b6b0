@@ -7,7 +7,15 @@ export interface WifiDirectPeer {
   status: number;
 }
 
+export interface PermissionStatus {
+  location: "granted" | "denied" | "prompt";
+  nearby: "granted" | "denied" | "prompt";
+}
+
 export interface WifiDirectPlugin {
+  checkPermissions(): Promise<PermissionStatus>;
+  requestPermissions(): Promise<PermissionStatus>;
+
   createGroup(): Promise<{ success: boolean }>;
   discover(): Promise<{ success: boolean }>;
   connectToPeer(options: { address: string }): Promise<{ success: boolean }>;
