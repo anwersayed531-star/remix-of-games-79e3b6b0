@@ -46,8 +46,19 @@ jobs:
       - name: Add Android Platform
         run: npx cap add android || true
 
+      - name: Sync Capacitor
+        run: npx cap sync android
+
       - name: Register WiFi Direct Plugin
         run: node android-plugins/register-plugin.cjs
+
+      - name: Verify Plugin Registration
+        run: |
+          echo "=== MainActivity.java ==="
+          cat android/app/src/main/java/com/sayed/gamehub/MainActivity.java
+          echo ""
+          echo "=== Plugin File Exists ==="
+          ls -la android/app/src/main/java/com/sayed/gamehub/plugins/
 
       - name: Set App Icon
         run: |
@@ -61,9 +72,6 @@ jobs:
         run: |
           mkdir -p android/app/src/main/res/drawable
           cp public/app-icon.png android/app/src/main/res/drawable/splash.png
-
-      - name: Sync Capacitor
-        run: npx cap sync android
 
       - name: Patch minSdkVersion and targetSdkVersion
         run: |
