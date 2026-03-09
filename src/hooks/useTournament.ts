@@ -9,7 +9,7 @@ export interface Player {
 export interface TournamentMatch {
   id: string;
   groupIndex: number;
-  players: string[]; // player IDs
+  players: string[];
   status: "pending" | "playing" | "finished";
   winnerId: string | null;
   round: number;
@@ -73,7 +73,6 @@ export function useTournament() {
     setState(prev => ({ ...prev, phase: "setup" }));
   }, []);
 
-  // Auto-divide players into groups
   const autoGroupPlayers = useCallback(() => {
     setState(prev => {
       const playerIds = prev.players.map(p => p.id);
@@ -85,7 +84,6 @@ export function useTournament() {
       for (let i = 0; i < shuffled.length; i += prev.playersPerMatch) {
         const groupPlayers = shuffled.slice(i, i + prev.playersPerMatch);
         if (groupPlayers.length < 2) {
-          // Add remaining players to last group
           if (groups.length > 0) {
             groups[groups.length - 1].players.push(...groupPlayers);
             const lastMatch = matches[matches.length - 1];
@@ -110,7 +108,6 @@ export function useTournament() {
     });
   }, []);
 
-  // Manual group assignment
   const setGroups = useCallback((groups: TournamentGroup[]) => {
     setState(prev => {
       const matches: TournamentMatch[] = groups.map((g, i) => ({
@@ -133,56 +130,91 @@ export function useTournament() {
     }));
   }, []);
 
+  const advanceRoundIfComplete = (prev: TournamentState, matches: TournamentMatch[]): TournamentState => {
+    const currentRoundMatches = matches.filter(m => m.round === prev.currentRound);
+    const allFinished = currentRoundMatches.every(m => m.status === "finished");
+
+    if (!allFinished) return { ...prev, matches };
+
+    const winners = currentRoundMatches.map(m => m.winnerId!).filter(Boolean);
+
+    if (winners.length <= 1) {
+      return { ...prev, matches, phase: "finished", champion: winners[0] || null };
+    }
+
+    const nextRound = prev.currentRound + 1;
+    const nextMatches: TournamentMatch[] = [];
+    for (let i = 0; i < winners.length; i += prev.playersPerMatch) {
+      const group = winners.slice(i, i + prev.playersPerMatch);
+      if (group.length < 2 && nextMatches.length > 0) {
+        nextMatches[nextMatches.length - 1].players.push(...group);
+        break;
+      }
+      nextMatches.push({
+        id: `m_r${nextRound}_${nextMatches.length}`,
+        groupIndex: nextMatches.length,
+        players: group,
+        status: "playing",
+        winnerId: null,
+        round: nextRound,
+      });
+    }
+
+    return { ...prev, matches: [...matches, ...nextMatches], currentRound: nextRound };
+  };
+
   const reportMatchResult = useCallback((matchId: string, winnerId: string) => {
     setState(prev => {
       const matches = prev.matches.map(m =>
         m.id === matchId ? { ...m, status: "finished" as const, winnerId } : m
       );
+      return advanceRoundIfComplete(prev, matches);
+    });
+  }, []);
 
-      // Check if all matches in current round are finished
-      const currentRoundMatches = matches.filter(m => m.round === prev.currentRound);
-      const allFinished = currentRoundMatches.every(m => m.status === "finished");
+  const disqualifyPlayer = useCallback((playerId: string) => {
+    setState(prev => {
+      let matches = [...prev.matches];
 
-      if (allFinished) {
-        const winners = currentRoundMatches.map(m => m.winnerId!).filter(Boolean);
-        
-        if (winners.length <= 1) {
-          // Tournament over
-          return {
-            ...prev,
-            matches,
-            phase: "finished" as const,
-            champion: winners[0] || null,
-          };
+      // Find active match containing this player
+      const activeMatch = matches.find(
+        m => m.status === "playing" && m.players.includes(playerId)
+      );
+
+      if (activeMatch) {
+        const remainingPlayers = activeMatch.players.filter(p => p !== playerId);
+        if (remainingPlayers.length === 1) {
+          // Auto-win for the remaining player
+          matches = matches.map(m =>
+            m.id === activeMatch.id
+              ? { ...m, status: "finished" as const, winnerId: remainingPlayers[0] }
+              : m
+          );
+        } else if (remainingPlayers.length > 1) {
+          // Just remove from match
+          matches = matches.map(m =>
+            m.id === activeMatch.id
+              ? { ...m, players: remainingPlayers }
+              : m
+          );
+          return { ...prev, matches };
         }
-
-        // Create next round matches
-        const nextRound = prev.currentRound + 1;
-        const nextMatches: TournamentMatch[] = [];
-        for (let i = 0; i < winners.length; i += prev.playersPerMatch) {
-          const group = winners.slice(i, i + prev.playersPerMatch);
-          if (group.length < 2 && nextMatches.length > 0) {
-            nextMatches[nextMatches.length - 1].players.push(...group);
-            break;
-          }
-          nextMatches.push({
-            id: `m_r${nextRound}_${i}`,
-            groupIndex: i,
-            players: group,
-            status: "playing",
-            winnerId: null,
-            round: nextRound,
-          });
-        }
-
-        return {
-          ...prev,
-          matches: [...matches, ...nextMatches],
-          currentRound: nextRound,
-        };
+        return advanceRoundIfComplete(prev, matches);
       }
 
-      return { ...prev, matches };
+      // Also remove from pending matches
+      matches = matches.map(m => {
+        if (m.status === "pending" && m.players.includes(playerId)) {
+          const remaining = m.players.filter(p => p !== playerId);
+          if (remaining.length === 1) {
+            return { ...m, status: "finished" as const, winnerId: remaining[0] };
+          }
+          return { ...m, players: remaining };
+        }
+        return m;
+      });
+
+      return advanceRoundIfComplete(prev, matches);
     });
   }, []);
 
@@ -197,6 +229,10 @@ export function useTournament() {
   const getPlayerName = useCallback((playerId: string) => {
     return state.players.find(p => p.id === playerId)?.name || playerId;
   }, [state.players]);
+
+  const getTotalRounds = useCallback(() => {
+    return Math.max(...state.matches.map(m => m.round), 0);
+  }, [state.matches]);
 
   const reset = useCallback(() => {
     setState(initialState);
@@ -214,9 +250,11 @@ export function useTournament() {
     setGroups,
     startTournament,
     reportMatchResult,
+    disqualifyPlayer,
     getActiveMatches,
     getFinishedMatches,
     getPlayerName,
+    getTotalRounds,
     reset,
   };
 }

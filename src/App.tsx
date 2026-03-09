@@ -31,6 +31,7 @@ const App = () => (
             <Route path="/ludo" element={<LudoGame />} />
             <Route path="/lobby-test" element={<LobbyTest />} />
             <Route path="/tournament" element={<TournamentPage />} />
+            <Route path="/local-tournament" element={<LocalTournament />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

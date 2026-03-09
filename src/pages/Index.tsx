@@ -46,6 +46,15 @@ const Index = () => {
       gradient: "from-accent/50 to-destructive/30",
       borderColor: "border-accent/30",
     },
+    {
+      id: "local-tournament",
+      title: "بطولة محلية",
+      subtitle: "أوفلاين",
+      icon: Swords,
+      path: "/local-tournament",
+      gradient: "from-primary/50 to-accent/30",
+      borderColor: "border-primary/30",
+    },
   ];
 
   return (
