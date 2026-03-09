@@ -47,7 +47,7 @@ jobs:
         run: npx cap add android || true
 
       - name: Register WiFi Direct Plugin
-        run: node android-plugins/register-plugin.js
+        run: node android-plugins/register-plugin.cjs
 
       - name: Sync Capacitor
         run: npx cap sync android
