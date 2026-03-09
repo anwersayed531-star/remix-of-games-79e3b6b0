@@ -159,7 +159,7 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void createGroup(PluginCall call) {
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             pendingCall = call;
             pendingAction = "createGroup";
             requestAllPermissions(call, "handlePermissionResult");
