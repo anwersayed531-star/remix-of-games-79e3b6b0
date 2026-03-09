@@ -136,7 +136,7 @@ public class WifiDirectPlugin extends Plugin {
         }
 
         // This was triggered from createGroup/discover — continue or reject
-        if (!hasRequiredPermissions()) {
+        if (!hasAllRequiredPermissions()) {
             call.reject("الأذونات المطلوبة غير ممنوحة. يرجى السماح بأذونات الموقع والأجهزة القريبة.");
             notifyStatus("failed");
             pendingAction = null;
