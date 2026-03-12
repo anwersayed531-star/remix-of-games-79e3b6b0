@@ -768,6 +768,8 @@ const LudoGame = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </>
+            )}
             <div>
               <label className="text-foreground text-sm mb-2 block">{t("piece_style")}</label>
               <Select value={pieceTheme} onValueChange={(v: PieceTheme) => setPieceTheme(v)}>
