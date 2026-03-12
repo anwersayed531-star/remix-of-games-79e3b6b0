@@ -422,6 +422,7 @@ const ChessGame = () => {
                     <SelectItem value="easy">{t("easy")}</SelectItem>
                     <SelectItem value="medium">{t("medium")}</SelectItem>
                     <SelectItem value="hard">{t("hard")}</SelectItem>
+                    <SelectItem value="impossible">صعب جداً 💀</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
