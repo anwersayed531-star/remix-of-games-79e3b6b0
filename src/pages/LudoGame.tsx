@@ -412,7 +412,7 @@ const LudoGame = () => {
         if (p.pos === -1 && dice === 6) score += 200;
 
         // Medium+ prefer advancing
-        if (ludoDifficulty !== "easy") score += newPos * 2;
+        score += newPos * 2;
 
         return { id: p.id, score };
       });
