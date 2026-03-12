@@ -14,7 +14,7 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Cell = string | null;
 type Mode = "local" | "ai" | "network";
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "impossible";
 
 const SYMBOL_SETS: Record<string, [string, string]> = {
   classic: ["✕", "◯"],
