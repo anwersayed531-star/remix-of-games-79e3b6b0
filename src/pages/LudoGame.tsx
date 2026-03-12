@@ -756,8 +756,18 @@ const LudoGame = () => {
                     ))}
                   </div>
                 </div>
-              </>
-            )}
+                <div>
+                  <label className="text-foreground text-sm mb-2 block">مستوى الكمبيوتر 🧠</label>
+                  <Select value={ludoDifficulty} onValueChange={(v: LudoDifficulty) => setLudoDifficulty(v)}>
+                    <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">سهل 😊</SelectItem>
+                      <SelectItem value="medium">متوسط 🤔</SelectItem>
+                      <SelectItem value="hard">صعب 😤</SelectItem>
+                      <SelectItem value="impossible">صعب جداً 💀</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
             <div>
               <label className="text-foreground text-sm mb-2 block">{t("piece_style")}</label>
               <Select value={pieceTheme} onValueChange={(v: PieceTheme) => setPieceTheme(v)}>
