@@ -46,6 +46,48 @@ const PasteInput = ({ onSubmit, placeholder, buttonText }: { onSubmit: (v: strin
   );
 };
 
+/** Combined scan + manual input section */
+const ScanAndInput = ({
+  onResult,
+  placeholder,
+  buttonText,
+  scanLabel,
+}: {
+  onResult: (code: string) => void;
+  placeholder: string;
+  buttonText: string;
+  scanLabel?: string;
+}) => {
+  const [scanning, setScanning] = useState(false);
+
+  if (scanning) {
+    return (
+      <QRCodeScanner
+        onScan={(code) => { setScanning(false); onResult(code); }}
+        onClose={() => setScanning(false)}
+        onManualInput={() => setScanning(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <Button
+        onClick={() => setScanning(true)}
+        className="w-full gold-gradient text-background font-bold rounded-xl gap-2"
+      >
+        <Camera className="w-4 h-4" />
+        {scanLabel || "مسح QR بالكاميرا"}
+      </Button>
+      <div className="relative flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+        <span className="relative bg-background px-3 text-muted-foreground text-xs">أو أدخل الكود يدوياً</span>
+      </div>
+      <PasteInput onSubmit={onResult} placeholder={placeholder} buttonText={buttonText} />
+    </div>
+  );
+};
+
 const MultiplayerLobby = ({
   status, role, localCode, answerCode = "", error,
   onCreateRoom, onJoinRoom, onHandleAnswer, onGenerateNext,
@@ -54,32 +96,10 @@ const MultiplayerLobby = ({
 }: MultiplayerLobbyProps) => {
   const [showJoin, setShowJoin] = useState(false);
   const [showAddMore, setShowAddMore] = useState(false);
-  const [scanning, setScanning] = useState<"join" | "answer" | null>(null);
-  const [manualMode, setManualMode] = useState(false);
 
   const handleAnswer = (code: string) => {
     (onHandleAnswer || onCompleteConnection)?.(code);
   };
-
-  const handleScanResult = (code: string) => {
-    setScanning(null);
-    if (scanning === "join") {
-      onJoinRoom(code);
-    } else if (scanning === "answer") {
-      handleAnswer(code);
-    }
-  };
-
-  // QR Scanner overlay
-  if (scanning) {
-    return (
-      <QRCodeScanner
-        onScan={handleScanResult}
-        onClose={() => setScanning(null)}
-        onManualInput={() => { setScanning(null); setManualMode(true); }}
-      />
-    );
-  }
 
   // Connected state
   if (status === "connected") {
@@ -129,16 +149,11 @@ const MultiplayerLobby = ({
                 </div>
                 <div className="bg-card/60 border border-border rounded-xl p-3">
                   <p className="text-foreground text-xs font-bold mb-2 text-center">٢. امسح كود الرد من اللاعب:</p>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      onClick={() => setScanning("answer")}
-                      className="w-full gold-gradient text-background font-bold rounded-xl gap-2"
-                    >
-                      <Camera className="w-4 h-4" />
-                      مسح QR بالكاميرا
-                    </Button>
-                    <PasteInput onSubmit={(code) => { handleAnswer(code); setShowAddMore(false); }} placeholder="أو الصق الكود يدوياً..." buttonText="اتصال" />
-                  </div>
+                  <ScanAndInput
+                    onResult={(code) => { handleAnswer(code); setShowAddMore(false); }}
+                    placeholder="أو الصق الكود يدوياً..."
+                    buttonText="اتصال"
+                  />
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setShowAddMore(false)} className="w-full text-muted-foreground">
                   إلغاء
@@ -196,42 +211,23 @@ const MultiplayerLobby = ({
           </div>
         )}
 
-        {/* Join mode: scan or enter code */}
+        {/* Join mode: scan + manual always visible together */}
         {status === "idle" && showJoin && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => { setShowJoin(false); setManualMode(false); }} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={() => setShowJoin(false)} className="text-muted-foreground">
                 <ArrowLeft className="w-4 h-4 ml-1" />
                 رجوع
               </Button>
               <p className="text-accent text-sm font-bold">انضمام بكود</p>
               <div className="w-16" />
             </div>
-
-            {!manualMode ? (
-              <div className="space-y-3">
-                <Button onClick={() => setScanning("join")} className="w-full h-14 text-lg gold-gradient text-background font-bold rounded-xl gap-2">
-                  <Camera className="w-5 h-5" />
-                  مسح QR Code بالكاميرا
-                </Button>
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                  <span className="relative bg-background px-3 text-muted-foreground text-xs">أو</span>
-                </div>
-                <Button variant="outline" onClick={() => setManualMode(true)} className="w-full border-accent text-accent hover:bg-accent/10 gap-2">
-                  <Keyboard className="w-4 h-4" />
-                  أدخل الكود يدوياً
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <PasteInput onSubmit={onJoinRoom} placeholder="الصق كود الغرفة هنا..." buttonText="انضمام" />
-                <Button variant="ghost" size="sm" onClick={() => setManualMode(false)} className="w-full text-muted-foreground gap-1">
-                  <Camera className="w-4 h-4" />
-                  مسح QR بدلاً من ذلك
-                </Button>
-              </div>
-            )}
+            <ScanAndInput
+              onResult={onJoinRoom}
+              placeholder="الصق كود الغرفة هنا..."
+              buttonText="انضمام"
+              scanLabel="مسح QR Code بالكاميرا"
+            />
           </div>
         )}
 
@@ -258,14 +254,14 @@ const MultiplayerLobby = ({
                   <span className="relative bg-background px-3 text-muted-foreground text-xs">ثم</span>
                 </div>
 
-                {/* Step 2: Scan or paste answer code */}
+                {/* Step 2: Scan or paste answer code — both visible */}
                 <div className="bg-card/60 border border-border rounded-xl p-4 space-y-3">
                   <p className="text-foreground text-sm font-bold text-center">٢. امسح كود الرد من اللاعب:</p>
-                  <Button onClick={() => setScanning("answer")} className="w-full gold-gradient text-background font-bold rounded-xl gap-2">
-                    <Camera className="w-4 h-4" />
-                    مسح QR بالكاميرا
-                  </Button>
-                  <PasteInput onSubmit={handleAnswer} placeholder="أو الصق كود الرد يدوياً..." buttonText="اتصال" />
+                  <ScanAndInput
+                    onResult={handleAnswer}
+                    placeholder="أو الصق كود الرد يدوياً..."
+                    buttonText="اتصال"
+                  />
                 </div>
               </>
             )}
@@ -296,7 +292,7 @@ const MultiplayerLobby = ({
         {status === "failed" && (
           <div className="space-y-3 text-center py-4">
             <Button
-              onClick={() => { onDisconnect(); setShowJoin(false); setShowAddMore(false); setManualMode(false); }}
+              onClick={() => { onDisconnect(); setShowJoin(false); setShowAddMore(false); }}
               variant="outline" className="border-accent text-accent hover:bg-accent/10"
             >
               حاول مرة أخرى
