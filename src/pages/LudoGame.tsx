@@ -144,6 +144,7 @@ const LudoGame = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [message, setMessage] = useState("دور الأحمر - ارمِ النرد!");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("ludo");
+  const [ludoDifficulty, setLudoDifficulty] = useState<LudoDifficulty>("medium");
   const [animating, setAnimating] = useState(false);
   const [animPiece, setAnimPiece] = useState<{ color: PlayerColor; id: number } | null>(null);
   const [animCoords, setAnimCoords] = useState<[number, number] | null>(null);
