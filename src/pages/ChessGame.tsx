@@ -15,7 +15,7 @@ import { useTournament } from "@/hooks/useTournament";
 import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Mode = "local" | "ai" | "network";
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "impossible";
 type BoardTheme = "wood" | "marble" | "plain" | "emerald";
 type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
