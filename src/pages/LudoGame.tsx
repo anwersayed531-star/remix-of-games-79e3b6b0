@@ -94,6 +94,7 @@ function getStepPositions(color: PlayerColor, fromPos: number, toPos: number): [
 }
 
 type GameMode = "local" | "network";
+type LudoDifficulty = "easy" | "medium" | "hard" | "impossible";
 
 // SVG Dice Component
 const DiceFace = ({ value, size = 56, rolling = false }: { value: number; size?: number; rolling?: boolean }) => {
