@@ -1,6 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
-import { Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Check, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QRCodeDisplayProps {
@@ -12,6 +12,7 @@ interface QRCodeDisplayProps {
 const QRCodeDisplay = ({ value, label, size = 200 }: QRCodeDisplayProps) => {
   const [copied, setCopied] = useState(false);
   const [showText, setShowText] = useState(false);
+  const canShare = typeof navigator !== "undefined" && !!navigator.share;
 
   const handleCopy = async () => {
     try {
@@ -30,6 +31,18 @@ const QRCodeDisplay = ({ value, label, size = 200 }: QRCodeDisplayProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: "كود الاتصال",
+        text: value,
+      });
+    } catch {
+      // User cancelled or share failed, fallback to copy
+      handleCopy();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center gap-3">
       {label && (
@@ -44,7 +57,7 @@ const QRCodeDisplay = ({ value, label, size = 200 }: QRCodeDisplayProps) => {
           fgColor="#1a1a2e"
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap justify-center">
         <Button
           variant="outline"
           size="sm"
@@ -54,6 +67,17 @@ const QRCodeDisplay = ({ value, label, size = 200 }: QRCodeDisplayProps) => {
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? "تم النسخ!" : "نسخ الكود"}
         </Button>
+        {canShare && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="border-accent text-accent hover:bg-accent/10 gap-1"
+          >
+            <Share2 className="w-4 h-4" />
+            مشاركة
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
