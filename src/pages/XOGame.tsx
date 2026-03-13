@@ -14,7 +14,7 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Cell = string | null;
 type Mode = "local" | "ai" | "network";
-type Difficulty = "easy" | "medium" | "hard" | "impossible";
+type Difficulty = "easy" | "medium" | "hard";
 
 const SYMBOL_SETS: Record<string, [string, string]> = {
   classic: ["✕", "◯"],
@@ -88,54 +88,10 @@ const XOGame = () => {
     return { winner: null, line: null };
   }, [gridSize, winLength]);
 
-  // Perfect minimax for XO (impossible mode)
-  const xoMinimax = useCallback((b: Cell[], isMax: boolean, depth: number, alpha: number, beta: number): number => {
-    const result = checkWinner(b);
-    if (result.winner === "O") return 10 - depth;
-    if (result.winner === "X") return depth - 10;
-    if (result.winner === "draw") return 0;
-    const empty = b.map((c, i) => (c === null ? i : -1)).filter(i => i >= 0);
-    if (isMax) {
-      let best = -Infinity;
-      for (const i of empty) {
-        const nb = [...b]; nb[i] = "O";
-        const val = xoMinimax(nb, false, depth + 1, alpha, beta);
-        best = Math.max(best, val);
-        alpha = Math.max(alpha, val);
-        if (beta <= alpha) break;
-      }
-      return best;
-    } else {
-      let best = Infinity;
-      for (const i of empty) {
-        const nb = [...b]; nb[i] = "X";
-        const val = xoMinimax(nb, true, depth + 1, alpha, beta);
-        best = Math.min(best, val);
-        beta = Math.min(beta, val);
-        if (beta <= alpha) break;
-      }
-      return best;
-    }
-  }, [checkWinner]);
-
   const aiMove = useCallback((b: Cell[]): number => {
     const empty = b.map((c, i) => (c === null ? i : -1)).filter((i) => i >= 0);
     if (empty.length === 0) return -1;
     if (difficulty === "easy") return empty[Math.floor(Math.random() * empty.length)];
-
-    // Impossible: perfect play with full minimax
-    if (difficulty === "impossible") {
-      let bestScore = -Infinity;
-      let bestIdx = empty[0];
-      for (const i of empty) {
-        const nb = [...b]; nb[i] = "O";
-        const score = xoMinimax(nb, false, 0, -Infinity, Infinity);
-        if (score > bestScore) { bestScore = score; bestIdx = i; }
-      }
-      return bestIdx;
-    }
-
-    // Medium/Hard: heuristic
     for (const i of empty) { const t = [...b]; t[i] = "O"; if (checkWinner(t).winner === "O") return i; }
     for (const i of empty) { const t = [...b]; t[i] = "X"; if (checkWinner(t).winner === "X") return i; }
     if (difficulty === "hard") {
@@ -145,7 +101,7 @@ const XOGame = () => {
       if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
     }
     return empty[Math.floor(Math.random() * empty.length)];
-  }, [difficulty, checkWinner, gridSize, totalCells, xoMinimax]);
+  }, [difficulty, checkWinner, gridSize, totalCells]);
 
   const handleClick = useCallback((index: number) => {
     if (board[index] || winner) return;
@@ -361,7 +317,6 @@ const XOGame = () => {
                     <SelectItem value="easy">{t("easy")}</SelectItem>
                     <SelectItem value="medium">{t("medium")}</SelectItem>
                     <SelectItem value="hard">{t("hard")}</SelectItem>
-                    <SelectItem value="impossible">صعب جداً 💀</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

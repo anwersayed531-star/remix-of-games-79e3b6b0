@@ -15,7 +15,7 @@ import { useTournament } from "@/hooks/useTournament";
 import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Mode = "local" | "ai" | "network";
-type Difficulty = "easy" | "medium" | "hard" | "impossible";
+type Difficulty = "easy" | "medium" | "hard";
 type BoardTheme = "wood" | "marble" | "plain" | "emerald";
 type PieceTheme = "classic" | "neo" | "staunton" | "minimal";
 
@@ -422,7 +422,6 @@ const ChessGame = () => {
                     <SelectItem value="easy">{t("easy")}</SelectItem>
                     <SelectItem value="medium">{t("medium")}</SelectItem>
                     <SelectItem value="hard">{t("hard")}</SelectItem>
-                    <SelectItem value="impossible">صعب جداً 💀</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
