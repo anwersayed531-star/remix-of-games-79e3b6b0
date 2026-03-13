@@ -94,6 +94,7 @@ function getStepPositions(color: PlayerColor, fromPos: number, toPos: number): [
 }
 
 type GameMode = "local" | "network";
+type LudoDifficulty = "easy" | "medium" | "hard" | "impossible";
 
 // SVG Dice Component
 const DiceFace = ({ value, size = 56, rolling = false }: { value: number; size?: number; rolling?: boolean }) => {
@@ -143,6 +144,7 @@ const LudoGame = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [message, setMessage] = useState("دور الأحمر - ارمِ النرد!");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("ludo");
+  const [ludoDifficulty, setLudoDifficulty] = useState<LudoDifficulty>("medium");
   const [animating, setAnimating] = useState(false);
   const [animPiece, setAnimPiece] = useState<{ color: PlayerColor; id: number } | null>(null);
   const [animCoords, setAnimCoords] = useState<[number, number] | null>(null);
@@ -351,30 +353,88 @@ const LudoGame = () => {
     }, 200);
   }, [dice, validPieces, animating, pieces, current, sixes, nextPlayer, isNetworkMode, isMyTurnNow, sendState, soundOn, play]);
 
-  // AI move
+  // AI move with difficulty
   useEffect(() => {
     if (winner || mustRoll || animating || isNetworkMode) return;
     if (!aiPlayers.includes(current) || validPieces.length === 0) return;
     const timeout = setTimeout(() => {
-      let bestId = validPieces[0];
+      // Easy: random
+      if (ludoDifficulty === "easy") {
+        movePiece(validPieces[Math.floor(Math.random() * validPieces.length)]);
+        return;
+      }
+
       const myPieces = pieces.filter(p => p.color === current && validPieces.includes(p.id));
-      for (const p of myPieces) {
+
+      // Score each move
+      const scored = myPieces.map(p => {
         const newPos = p.pos === -1 ? 0 : p.pos + dice!;
-        if (newPos === 57) { bestId = p.id; break; }
+        let score = 0;
+
+        // Reaching home = highest priority
+        if (newPos === 57) score += 1000;
+
+        // Entering home column = very good
+        if (newPos >= 51 && newPos <= 56) score += 500 + newPos * 10;
+
+        // Capture = great
         if (newPos >= 0 && newPos <= 50) {
           const abs = getAbsTrack(p.color, newPos);
-          if (pieces.some(o => o.color !== p.color && o.pos >= 0 && o.pos <= 50 && getAbsTrack(o.color, o.pos) === abs && !SAFE.includes(abs))) { bestId = p.id; break; }
+          const canCapture = pieces.some(o => o.color !== p.color && o.pos >= 0 && o.pos <= 50 && getAbsTrack(o.color, o.pos) === abs && !SAFE.includes(abs));
+          if (canCapture) score += 800;
+
+          // Landing on safe spot = good
+          if (SAFE.includes(abs)) score += 100;
+
+          // Impossible/Hard: avoid danger (check if enemies can land on us)
+          if (ludoDifficulty === "hard" || ludoDifficulty === "impossible") {
+            for (const enemy of pieces.filter(ep => ep.color !== p.color && ep.pos >= 0 && ep.pos <= 50)) {
+              const enemyAbs = getAbsTrack(enemy.color, enemy.pos);
+              const dist = (abs - enemyAbs + 52) % 52;
+              if (dist <= 6 && dist > 0 && !SAFE.includes(abs)) score -= 200;
+            }
+          }
+
+          // Impossible: prefer advancing pieces closer to home
+          if (ludoDifficulty === "impossible") {
+            score += newPos * 5; // Prefer pieces further along
+            // Prefer getting out of base with 6
+            if (p.pos === -1 && dice === 6) score += 300;
+            // Block opponents near their home column
+            for (const enemy of pieces.filter(ep => ep.color !== p.color && ep.pos >= 40 && ep.pos <= 50)) {
+              const enemyAbs = getAbsTrack(enemy.color, enemy.pos);
+              if (abs === enemyAbs) score += 600; // blocking capture
+            }
+          }
         }
+
+        // Getting out of base
+        if (p.pos === -1 && dice === 6) score += 200;
+
+        // Medium+ prefer advancing
+        score += newPos * 2;
+
+        return { id: p.id, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+
+      // Impossible: always pick best. Hard: 90% best. Medium: 70% best.
+      const rand = Math.random();
+      const pickBest = ludoDifficulty === "impossible" ? true
+        : ludoDifficulty === "hard" ? rand < 0.9
+        : rand < 0.7;
+
+      if (pickBest || scored.length === 1) {
+        movePiece(scored[0].id);
+      } else {
+        // Pick random from non-best
+        const rest = scored.slice(1);
+        movePiece(rest[Math.floor(Math.random() * rest.length)].id);
       }
-      if (bestId === validPieces[0]) {
-        const inBase = myPieces.find(p => p.pos === -1);
-        if (inBase && dice === 6) bestId = inBase.id;
-        else bestId = [...myPieces].sort((a, b) => b.pos - a.pos)[0].id;
-      }
-      movePiece(bestId);
     }, 600);
     return () => clearTimeout(timeout);
-  }, [validPieces, current, aiPlayers, mustRoll, winner, pieces, dice, movePiece, isNetworkMode, animating]);
+  }, [validPieces, current, aiPlayers, mustRoll, winner, pieces, dice, movePiece, isNetworkMode, animating, ludoDifficulty]);
 
   // AI roll
   useEffect(() => {
@@ -695,6 +755,18 @@ const LudoGame = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div>
+                  <label className="text-foreground text-sm mb-2 block">مستوى الكمبيوتر 🧠</label>
+                  <Select value={ludoDifficulty} onValueChange={(v: LudoDifficulty) => setLudoDifficulty(v)}>
+                    <SelectTrigger className="bg-card/60 border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">سهل 😊</SelectItem>
+                      <SelectItem value="medium">متوسط 🤔</SelectItem>
+                      <SelectItem value="hard">صعب 😤</SelectItem>
+                      <SelectItem value="impossible">صعب جداً 💀</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
