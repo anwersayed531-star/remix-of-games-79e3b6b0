@@ -5,9 +5,6 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -15,11 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify latest code
-        run: |
-          echo "=== Latest 5 commits ==="
-          git log --oneline -5
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
