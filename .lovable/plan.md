@@ -1,44 +1,43 @@
 
 
-# إصلاح 3 مشاكل: الكاميرا + WiFi Direct + فشل الاتصال
+# خطة إصلاح توافق لوحة الشطرنج مع جميع أحجام الشاشات
 
-## المشاكل المكتشفة
+## المشكلة
+على الشاشات الصغيرة (320px وأقل)، القطع تُقطع من الأعلى والأسفل بسبب:
+1. خاصية `overflow-hidden` على حاوية اللوحة تقص القطع والظلال
+2. أحجام خطوط القطع (خصوصاً ستاونتن `8vw`) كبيرة نسبياً لحجم المربعات
+3. القطع لا تتناسب تلقائياً مع حجم المربع الفعلي
 
-### 1. ماسح QR صغير جداً
-`qrbox: { width: 220, height: 220 }` — المربع صغير والكود لازم يكون جواه بالظبط. الحل: تكبير منطقة المسح لتغطي معظم الكاميرا.
+## الحل
 
-### 2. WiFi Direct
-الكود الأصلي (Java) يبدو سليم. لكن `requestDeviceInfo()` يحتاج API 29+. هنضيف fallback. وهنتأكد إن الـ status notifications شغالة صح.
+### 1. تعديل أحجام خطوط القطع
+استخدام وحدات نسبية للمربع بدلاً من `vw` الثابتة لضمان أن القطعة لا تتجاوز مربعها أبداً:
 
-### 3. فشل الاتصال بالكود (المشكلة الأساسية)
-**السبب**: `RTC_CONFIG_LOCAL` فيه `iceServers: []` — يعني مفيش STUN server. على أندرويد كثير من الأجهزة مش بتلاقي host candidates بدون STUN. كمان `extractEssentials` بيجيب candidate واحد بس من نوع `host`، لو مفيش بيبقى فاضي والاتصال بيفشل.
+| الثيم | الحالي | الجديد |
+|-------|--------|--------|
+| classic | `min(7vw, 36px)` | `min(5.5vw, 36px)` |
+| neo | `min(7vw, 36px)` | `min(5.5vw, 36px)` |
+| staunton | `min(8vw, 40px)` | `min(6vw, 38px)` |
+| minimal | `min(5vw, 26px)` | `min(4.5vw, 26px)` |
 
-**الحل**:
-- إضافة STUN servers لـ `RTC_CONFIG_LOCAL`
-- جمع كل الـ candidates مش واحد بس
-- زيادة timeout الـ ICE gathering لـ 10 ثواني
-- إضافة retry logic عند الفشل
+### 2. إضافة `overflow-visible` للمربعات مع الحفاظ على `overflow-hidden` للحاوية الخارجية فقط لمنع التمدد الأفقي
+- إزالة `overflow-hidden` من الحاوية `board-3d`
+- إضافة `overflow-hidden` فقط على مستوى الـ grid container
 
-## التغييرات
+### 3. تحسين حجم اللوحة نسبة للشاشة
+تغيير حساب عرض اللوحة ليأخذ بالاعتبار حدود الشاشة بشكل أفضل:
+- من: `min(calc(100vw - 8px), 420px)`  
+- إلى: `min(calc(100vw - 16px), 420px)` مع padding إضافي
 
-### `src/components/QRCodeScanner.tsx`
-- تكبير `qrbox` ليكون 85% من عرض الحاوية (بدل 220px ثابت)
-- إزالة المربع الصغير المقيد
+### 4. ضمان القطع داخل المربعات
+إضافة `line-height: 1` و `overflow: hidden` على عنصر القطعة `<span>` نفسه لمنع أي تجاوز عمودي.
 
-### `src/lib/sdpUtils.ts`
-- تغيير `RTC_CONFIG_LOCAL` ليشمل STUN servers (Google)
-- تعديل `extractEssentials` لجمع كل candidates (host + srflx + relay)
-- تعديل `reconstructSDP` لإضافة كل الـ candidates
-- زيادة `iceCandidatePoolSize` لـ 5
+---
 
-### `src/hooks/useP2PHost.ts`
-- زيادة ICE timeout من 5000 لـ 10000
-- إضافة `icecandidate` event listener للتأكد من وجود candidates قبل إنشاء الكود
+### التفاصيل التقنية
 
-### `src/hooks/useP2PGuest.ts`
-- نفس التعديلات: زيادة timeout + التحقق من candidates
+**ملف واحد يتعدل:** `src/pages/ChessGame.tsx`
 
-### `android-plugins/WifiDirectPlugin.java`
-- إضافة fallback لـ `getDeviceName` للأجهزة الأقدم من API 29
-- إضافة `try-catch` أفضل حول `requestDeviceInfo`
-
+- تعديل كائن `PIECE_STYLES` (أسطر 53-92): تصغير أحجام الخطوط
+- تعديل حاوية اللوحة (سطر 313-314): تحسين التحجيم والـ overflow
+- تعديل عنصر القطعة (سطر 350-353): إضافة `lineHeight: 1` وضبط الحجم داخل المربع

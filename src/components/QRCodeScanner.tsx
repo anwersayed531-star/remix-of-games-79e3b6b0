@@ -40,9 +40,12 @@ const QRCodeScanner = ({ onScan, onClose, onManualInput }: QRCodeScannerProps) =
         const scanner = new Html5Qrcode(readerId);
         scannerRef.current = scanner;
 
+        const containerWidth = containerRef.current?.clientWidth || 300;
+        const scanSize = Math.floor(containerWidth * 0.85);
+
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
+          { fps: 15, qrbox: { width: scanSize, height: scanSize } },
           (decodedText) => {
             if (!scannedRef.current && mounted) {
               scannedRef.current = true;

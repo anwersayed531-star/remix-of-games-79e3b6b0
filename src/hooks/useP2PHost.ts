@@ -128,7 +128,7 @@ export function useP2PHost(): UseP2PHostReturn {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await waitForICE(pc, 5000);
+    await waitForICE(pc, 10000);
 
     const fullOffer = pc.localDescription!;
     setOfferCode(compressSDP(fullOffer));

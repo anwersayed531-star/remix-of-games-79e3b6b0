@@ -286,13 +286,24 @@ public class WifiDirectPlugin extends Plugin {
 
     @PluginMethod
     public void getDeviceName(PluginCall call) {
-        manager.requestDeviceInfo(channel, device -> {
-            if (device != null) {
-                call.resolve(new JSObject().put("name", device.deviceName));
-            } else {
-                call.resolve(new JSObject().put("name", "Player"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // API 29+ — use requestDeviceInfo
+            try {
+                manager.requestDeviceInfo(channel, device -> {
+                    if (device != null) {
+                        call.resolve(new JSObject().put("name", device.deviceName));
+                    } else {
+                        call.resolve(new JSObject().put("name", Build.MODEL));
+                    }
+                });
+            } catch (Exception e) {
+                Log.w(TAG, "requestDeviceInfo failed, using model name", e);
+                call.resolve(new JSObject().put("name", Build.MODEL));
             }
-        });
+        } else {
+            // Pre-API 29 — use Build.MODEL as fallback
+            call.resolve(new JSObject().put("name", Build.MODEL));
+        }
     }
 
     // ─── Socket / networking ──────────────────────────────────────
