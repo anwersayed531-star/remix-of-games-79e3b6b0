@@ -69,7 +69,7 @@ export function useP2PGuest(): UseP2PGuestReturn {
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      await waitForICE(pc, 5000);
+      await waitForICE(pc, 10000);
 
       const fullAnswer = pc.localDescription!;
       setAnswerCode(compressSDP(fullAnswer));
