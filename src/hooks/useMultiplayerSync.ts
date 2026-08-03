@@ -6,7 +6,7 @@ export type ConnectionStatus = "idle" | "creating" | "waiting" | "connecting" | 
 export type Role = "host" | "guest" | null;
 
 interface GameMessage {
-  type: "state" | "action" | "reset" | "ping" | "pong";
+  type: "state" | "action" | "reset" | "ping" | "pong" | "switchGame";
   payload?: any;
   timestamp: number;
 }
@@ -30,6 +30,8 @@ interface UseMultiplayerSyncReturn {
   onGameState: (handler: (state: any) => void) => void;
   onAction: (handler: (action: any) => void) => void;
   onReset: (handler: () => void) => void;
+  sendGameSwitch: (route: string) => void;
+  onGameSwitch: (handler: (route: string) => void) => void;
   isMyTurn: (currentTurn: string, hostValue: string, guestValue: string) => boolean;
   // Multi-peer
   peerCount: number;
@@ -46,6 +48,7 @@ export function useMultiplayerSync(): UseMultiplayerSyncReturn {
   const gameStateHandlerRef = useRef<((state: any) => void) | null>(null);
   const actionHandlerRef = useRef<((action: any) => void) | null>(null);
   const resetHandlerRef = useRef<(() => void) | null>(null);
+  const gameSwitchHandlerRef = useRef<((route: string) => void) | null>(null);
 
   // Map host/guest status to unified status
   const getStatus = useCallback((): ConnectionStatus => {
@@ -90,6 +93,10 @@ export function useMultiplayerSync(): UseMultiplayerSyncReturn {
           resetHandlerRef.current?.();
           host.broadcast(msg);
           break;
+        case "switchGame":
+          gameSwitchHandlerRef.current?.(msg.payload);
+          host.broadcast(msg);
+          break;
         case "ping":
           // handled by host internally
           break;
@@ -110,6 +117,9 @@ export function useMultiplayerSync(): UseMultiplayerSyncReturn {
           break;
         case "reset":
           resetHandlerRef.current?.();
+          break;
+        case "switchGame":
+          gameSwitchHandlerRef.current?.(msg.payload);
           break;
         case "ping":
           guest.sendMessage({ type: "pong", timestamp: Date.now() });
@@ -163,6 +173,16 @@ export function useMultiplayerSync(): UseMultiplayerSyncReturn {
     }
   }, [role, host, guest]);
 
+  const sendGameSwitch = useCallback((route: string) => {
+    const msg: GameMessage = { type: "switchGame", payload: route, timestamp: Date.now() };
+    if (role === "host") host.broadcast(msg);
+    else guest.sendMessage(msg);
+  }, [role, host, guest]);
+
+  const onGameSwitch = useCallback((handler: (route: string) => void) => {
+    gameSwitchHandlerRef.current = handler;
+  }, []);
+
   const onGameState = useCallback((handler: (state: any) => void) => {
     gameStateHandlerRef.current = handler;
   }, []);
@@ -209,6 +229,8 @@ export function useMultiplayerSync(): UseMultiplayerSyncReturn {
     onGameState,
     onAction,
     onReset,
+    sendGameSwitch,
+    onGameSwitch,
     isMyTurn,
     peerCount: role === "host" ? host.peerCount : role === "guest" ? 1 : 0,
     peers: role === "host" ? host.peers : [],
