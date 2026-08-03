@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import NetworkLobby from "@/components/NetworkLobby";
 import TournamentManager from "@/components/TournamentManager";
 import MatchSidebar from "@/components/MatchSidebar";
-import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useConnection } from "@/contexts/ConnectionContext";
 import { useTournament } from "@/hooks/useTournament";
 import { useGameSounds } from "@/hooks/useGameSounds";
 
@@ -39,7 +39,12 @@ const XOGame = () => {
   const [scores, setScores] = useState({ x: 0, o: 0, draw: 0 });
   const [soundOn, setSoundOn] = useState(true);
 
-  const mp = useMultiplayerSync();
+  const mp = useConnection();
+
+  // Keep playing on an existing room when the players switch game
+  useEffect(() => {
+    if (mp.status === "connected" && mode !== "network") setMode("network");
+  }, [mp.status, mode]);
   const tournament = useTournament();
   const { play } = useGameSounds();
   const isHost = mp.role === "host";

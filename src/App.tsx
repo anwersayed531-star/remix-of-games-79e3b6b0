@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ConnectionProvider } from "@/contexts/ConnectionContext";
+import GameSwitchBar from "@/components/GameSwitchBar";
 import Welcome from "./pages/Welcome";
 import Index from "./pages/Index";
 import XOGame from "./pages/XOGame";
@@ -21,10 +22,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
-        <ConnectionProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ConnectionProvider>
           <Routes>
             <Route path="/" element={<Welcome />} />
             <Route path="/home" element={<Index />} />
@@ -36,8 +37,9 @@ const App = () => (
             <Route path="/local-tournament" element={<LocalTournament />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <GameSwitchBar />
+          </ConnectionProvider>
         </BrowserRouter>
-        </ConnectionProvider>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>

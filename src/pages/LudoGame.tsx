@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import NetworkLobby from "@/components/NetworkLobby";
 import TournamentManager from "@/components/TournamentManager";
 import MatchSidebar from "@/components/MatchSidebar";
-import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useConnection } from "@/contexts/ConnectionContext";
 import { useTournament } from "@/hooks/useTournament";
 import { useGameSounds } from "@/hooks/useGameSounds";
 
@@ -150,7 +150,12 @@ const LudoGame = () => {
   const [animCoords, setAnimCoords] = useState<[number, number] | null>(null);
   const [soundOn, setSoundOn] = useState(true);
 
-  const mp = useMultiplayerSync();
+  const mp = useConnection();
+
+  // Keep playing on an existing room when the players switch game
+  useEffect(() => {
+    if (mp.status === "connected" && gameMode !== "network") setGameMode("network");
+  }, [mp.status, gameMode]);
   const tournament = useTournament();
   const { play } = useGameSounds();
   const isHostPlayer = mp.role === "host";

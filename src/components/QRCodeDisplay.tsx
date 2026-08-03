@@ -43,18 +43,22 @@ const QRCodeDisplay = ({ value, label, size = 200 }: QRCodeDisplayProps) => {
     }
   };
 
+  // Bigger modules + low error correction → easiest possible scan on phones
+  const renderSize = Math.max(size, Math.min(300, typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.72) : size));
+
   return (
     <div className="flex flex-col items-center gap-3">
       {label && (
         <p className="text-accent text-sm font-bold text-center">{label}</p>
       )}
-      <div className="bg-white rounded-xl p-3 shadow-md">
+      <div className="bg-white rounded-xl p-4 shadow-md">
         <QRCodeSVG
           value={value}
-          size={size}
-          level="M"
+          size={renderSize}
+          level="L"
+          marginSize={2}
           bgColor="#ffffff"
-          fgColor="#1a1a2e"
+          fgColor="#000000"
         />
       </div>
       <div className="flex gap-2 flex-wrap justify-center">
