@@ -7,7 +7,7 @@ import NetworkLobby from "@/components/NetworkLobby";
 import TournamentManager from "@/components/TournamentManager";
 import TournamentBracket from "@/components/TournamentBracket";
 import MatchSidebar from "@/components/MatchSidebar";
-import { useMultiplayerSync } from "@/hooks/useMultiplayerSync";
+import { useConnection } from "@/contexts/ConnectionContext";
 import { useTournament } from "@/hooks/useTournament";
 
 type GameChoice = "xo" | "chess" | "ludo";
@@ -20,7 +20,7 @@ const GAME_NAMES: Record<GameChoice, string> = {
 
 const TournamentPage = () => {
   const navigate = useNavigate();
-  const mp = useMultiplayerSync();
+  const mp = useConnection();
   const tournament = useTournament();
   const [gameChoice, setGameChoice] = useState<GameChoice>("xo");
 
